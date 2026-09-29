@@ -119,3 +119,22 @@ export async function activarVacante(id: string, activa: boolean) {
   const rows = await svcUpdate("vacantes", `id=eq.${encodeURIComponent(id)}`, { activa });
   if (!rows.length) throw new ErrorServicio("Vacante no encontrada.", 404);
 }
+
+/** Quién abrió una vacante (solo equipo, nunca para empresas). */
+export interface PersonaClick {
+  slug: string;
+  nombre: string;
+  whatsapp: string;
+  estado: string | null;
+  areas: string[];
+  rango_edad: string | null;
+  clicks: number;
+  canales: string[];
+  primer_click: string;
+  ultimo_click: string;
+}
+
+export async function quienAbrio(id: string): Promise<PersonaClick[]> {
+  const rows = await svcRpc<PersonaClick[]>("quien_abrio", { p_vacante: id.slice(0, 40) });
+  return rows.map((r) => ({ ...r, clicks: Number(r.clicks) }));
+}
