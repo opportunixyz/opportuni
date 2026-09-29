@@ -6,10 +6,12 @@ import { metaDeHeaders } from "../../lib/pasaporte/metadata";
 import { buscarVacante, canalValido, destinoDe, nuevoSlugPasaporte, registrarClick } from "../../lib/pasaporte/puerta";
 import { TERMINOS_VERSION } from "../../lib/pasaporte/terminos";
 import { dentroDelLimite, ipDe } from "../../lib/limite";
+import { credencialDeClick } from "../../lib/stellar/pasaporte";
 import { svcRpc } from "../../lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // POST: la puerta envía el formulario del pasaporte. Crea el pasaporte y su
 // dispositivo (confirmado), deja la cookie opp_dev, registra el click y
@@ -83,7 +85,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, existe: true, error: "Ese WhatsApp ya tiene pasaporte." }, { status: 409 });
     }
 
-    if (vacante) waitUntil(registrarClick(disp.tokenHash, vacante.id, canal, meta));
+    // La credencial queda pendiente: la cuenta la crea la puerta con la
+    // passkey (o la de respaldo, si falla) y ahí se emite.
+    if (vacante) {
+      waitUntil(
+        registrarClick(disp.tokenHash, vacante.id, canal, meta).then(() =>
+          credencialDeClick(disp.tokenHash, vacante.id, false)
+        )
+      );
+    }
 
     const out = NextResponse.json({ ok: true, destino, registrado: true });
     out.cookies.set(DEVICE_COOKIE, disp.cookie, deviceCookieOptions);
