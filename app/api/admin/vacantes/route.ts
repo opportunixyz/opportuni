@@ -1,97 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_API_ENABLED } from "../../../lib/submissions";
-import { sbRpc } from "../../../lib/supabase";
+import { ACTOR_WEB, respuestaError, sinSesion } from "../../../lib/admin/guard";
+import { activarVacante, crearVacante, listarVacantes, postulantesDe } from "../../../lib/admin/vacantes";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-interface VacStat {
-  vacante_id: string;
-  titulo: string;
-  empresa: string | null;
-  activa: boolean;
-  clicks: number;
-  postulantes: number;
-  created_at: string;
-}
-
-interface Postulante {
-  nombre: string;
-  carrera_area: string;
-  whatsapp: string;
-  cv_link: string | null;
-  created_at: string;
-}
-
-// Conteos de clicks/postulantes por vacante para el dashboard admin.
-// Con ?vacante={id} devuelve el detalle de postulantes de esa vacante.
-// Desactivada junto con el resto del dashboard (ver ADMIN_API_ENABLED).
+// GET: vacantes con clicks, personas y postulantes. Con ?vacante={id}, los
+// postulantes de esa vacante (formulario propio /postular).
 export async function GET(req: NextRequest) {
-  if (!ADMIN_API_ENABLED) {
-    return NextResponse.json(
-      { ok: false, error: "El dashboard está desactivado." },
-      { status: 503 }
-    );
-  }
-  const vacanteId = new URL(req.url).searchParams.get("vacante");
+  const bloqueo = await sinSesion();
+  if (bloqueo) return bloqueo;
+  const id = new URL(req.url).searchParams.get("vacante");
   try {
-    if (vacanteId) {
-      const postulantes = await sbRpc<Postulante[]>("postulantes_por_vacante", { vid: vacanteId });
-      return NextResponse.json({ ok: true, postulantes });
-    }
-    const stats = await sbRpc<VacStat[]>("vacante_stats");
-    return NextResponse.json({ ok: true, stats });
+    if (id) return NextResponse.json({ ok: true, postulantes: await postulantesDe(id) });
+    return NextResponse.json({ ok: true, stats: await listarVacantes() });
   } catch (e) {
-    return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Error al consultar." },
-      { status: 500 }
-    );
+    return respuestaError(e, "vacantes");
   }
 }
 
-// POST — crea una vacante nueva desde el dashboard admin.
+// POST: pegar la URL de la vacante y obtener opportuni.xyz/v/{slug}.
 export async function POST(req: NextRequest) {
-  if (!ADMIN_API_ENABLED) {
-    return NextResponse.json(
-      { ok: false, error: "El dashboard está desactivado." },
-      { status: 503 }
-    );
-  }
+  const bloqueo = await sinSesion();
+  if (bloqueo) return bloqueo;
   try {
-    const body = await req.json();
-    const id = String(body.id ?? "").trim().toLowerCase();
-    const titulo = String(body.titulo ?? "").trim();
-    const tipo = String(body.tipo ?? "").trim();
-
-    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(id)) {
-      return NextResponse.json(
-        { ok: false, error: "El id debe ser un slug corto: letras, números y guiones (ej. pm-nubank)." },
-        { status: 400 }
-      );
-    }
-    if (!titulo) {
-      return NextResponse.json({ ok: false, error: "Falta el título." }, { status: 400 });
-    }
-    if (tipo && !["remoto", "presencial", "hibrido"].includes(tipo)) {
-      return NextResponse.json({ ok: false, error: "Tipo inválido." }, { status: 400 });
-    }
-
-    await sbRpc("crear_vacante", {
-      p_id: id,
-      p_titulo: titulo,
-      p_empresa: String(body.empresa ?? "").trim(),
-      p_ubicacion: String(body.ubicacion ?? "").trim(),
-      p_tipo: tipo,
-      p_salario: String(body.salario ?? "").trim(),
-      p_descripcion: String(body.descripcion ?? "").trim(),
-      p_url_destino: String(body.urlDestino ?? "").trim(),
-    });
-
-    return NextResponse.json({ ok: true, id });
+    const body = await req.json().catch(() => ({}));
+    const r = await crearVacante(body, ACTOR_WEB);
+    return NextResponse.json({ ok: true, ...r });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error al crear.";
-    const friendly = msg.includes("duplicate key")
-      ? "Ya existe una vacante con ese id. Usa otro slug."
-      : msg;
-    return NextResponse.json({ ok: false, error: friendly }, { status: 500 });
+    return respuestaError(e, "crear vacante");
+  }
+}
+
+// PATCH { id, activa }: apagar o prender un link sin borrar sus datos.
+export async function PATCH(req: NextRequest) {
+  const bloqueo = await sinSesion();
+  if (bloqueo) return bloqueo;
+  try {
+    const body = await req.json().catch(() => ({}));
+    await activarVacante(String(body.id ?? ""), body.activa === true);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return respuestaError(e, "activar vacante");
   }
 }

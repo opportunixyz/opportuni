@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
-import { ADMIN_API_ENABLED } from "../../../lib/submissions";
-import { getVacanteById, sbRpc } from "../../../lib/supabase";
+import { sinSesion } from "../../../lib/admin/guard";
+import { getVacanteById, svcRpc } from "../../../lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -37,15 +37,11 @@ interface Postulante {
   created_at: string;
 }
 
-// Reporte PDF de una vacante: clicks, postulaciones y lista de postulantes.
-// Desactivada junto con el dashboard (ver ADMIN_API_ENABLED).
+// Reporte INTERNO de una vacante: clicks, postulaciones y lista de postulantes
+// con WhatsApp. No es para empresas: a ellas solo van porcentajes (PRD F3).
 export async function GET(req: NextRequest) {
-  if (!ADMIN_API_ENABLED) {
-    return NextResponse.json(
-      { ok: false, error: "El dashboard está desactivado." },
-      { status: 503 }
-    );
-  }
+  const bloqueo = await sinSesion();
+  if (bloqueo) return bloqueo;
   const url = new URL(req.url);
 
   const id = url.searchParams.get("vacante") ?? "";
@@ -55,8 +51,8 @@ export async function GET(req: NextRequest) {
   }
 
   const [stats, postulantes] = await Promise.all([
-    sbRpc<{ vacante_id: string; clicks: number; postulantes: number }[]>("vacante_stats"),
-    sbRpc<Postulante[]>("postulantes_por_vacante", { vid: id }),
+    svcRpc<{ vacante_id: string; clicks: number; postulantes: number }[]>("vacante_stats"),
+    svcRpc<Postulante[]>("postulantes_por_vacante", { vid: id }),
   ]);
   const stat = stats.find((s) => s.vacante_id === id);
   const clicks = Number(stat?.clicks ?? 0);

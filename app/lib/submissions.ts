@@ -138,15 +138,3 @@ export async function getPdf(ref: string): Promise<{ body: BodyInit; filename: s
   }
   return null;
 }
-
-/**
- * El dashboard se autenticaba con la wallet Accesly del caller
- * (NEXT_PUBLIC_ADMIN_WALLETS). Retirada esa infra no queda gate, así que las
- * rutas /api/admin/* quedan desactivadas: responden 503 sin tocar los datos.
- * Poner esto en `true` sin implementar antes otro gate deja los CVs, WhatsApps
- * y postulantes abiertos a cualquiera con la URL.
- *
- * Anotado como `boolean` (y no como literal) a propósito: así TypeScript no
- * marca como inalcanzable el cuerpo de cada ruta y sigue verificándolo.
- */
-export const ADMIN_API_ENABLED: boolean = false;

@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPdf, ADMIN_API_ENABLED } from "../../../lib/submissions";
+import { getPdf } from "../../../lib/submissions";
+import { sinSesion } from "../../../lib/admin/guard";
 
 export const runtime = "nodejs";
 
-// Descarga el PDF de un CV. Desactivada junto con el dashboard: sin gate, esto
-// serviría CVs a cualquiera con la URL (ver ADMIN_API_ENABLED).
+// Descarga el PDF de un CV. Solo con sesión de admin (middleware y sinSesion).
 export async function GET(req: NextRequest) {
-  if (!ADMIN_API_ENABLED) {
-    return NextResponse.json(
-      { ok: false, error: "El dashboard está desactivado." },
-      { status: 503 }
-    );
-  }
+  const bloqueo = await sinSesion();
+  if (bloqueo) return bloqueo;
   const url = new URL(req.url);
   const ref = url.searchParams.get("ref") ?? "";
   const pdf = await getPdf(ref);
