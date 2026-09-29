@@ -16,6 +16,7 @@ Decisiones ya tomadas (no reabrir):
 - En cadena solo hash con salt. Nada de nombre, WhatsApp, empresa ni puesto.
 - `rpId` fijo `opportuni.xyz`; nunca probar passkeys desde `*.vercel.app`.
 - El contrato de registro vive en este repo, en `contracts/credential-registry` (es del producto Opportuni, no de Accesly).
+- **No se usan los contratos ni el SDK de Accesly** (`Accesly/SmartContracts`, `@accesly/*`). La smart account y el verificador de passkeys son los de OpenZeppelin que `smart-account-kit` ya tiene desplegados en mainnet (ver PRD 8.2).
 
 Gates del fin de semana (26 y 27 sep): sábado 13:00 cuenta con passkey en mainnet desde iPhone, o plan B de cuentas patrocinadas; sábado 19:00 emisión con permiso delegado, o plan B de Face ID por credencial.
 
