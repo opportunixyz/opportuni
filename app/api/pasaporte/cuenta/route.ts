@@ -19,7 +19,7 @@ export const maxDuration = 60;
 
 const B64URL = /^[A-Za-z0-9_-]+$/;
 const C = /^C[A-Z2-7]{55}$/;
-const MOTIVOS = ["sin_soporte", "cancelada", "error", "inapp", "regla_cancelada", "regla_error"] as const;
+const MOTIVOS = ["sin_soporte", "sin_autenticador", "cancelada", "error", "inapp", "regla_cancelada", "regla_error"] as const;
 
 export async function POST(req: NextRequest) {
   if (!stellarServidor()) return NextResponse.json({ ok: true, stellar: false });

@@ -9,6 +9,20 @@ export function puedePasskey(inapp: boolean): boolean {
   return (h === "opportuni.xyz" || h.endsWith(".opportuni.xyz")) && typeof window.PublicKeyCredential === "function";
 }
 
+/**
+ * ¿El dispositivo puede guardar una passkey (Face ID, huella, Windows Hello)?
+ * Una laptop sin nada de eso solo ofrecería "escanea un QR o usa una llave de
+ * seguridad": ahí conviene ir directo a la cuenta de respaldo.
+ */
+export async function guardaPasskeys(): Promise<boolean> {
+  try {
+    const fn = window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable;
+    return typeof fn === "function" ? await fn.call(window.PublicKeyCredential) : false;
+  } catch {
+    return false;
+  }
+}
+
 /** ¿El error es una cancelación del joven (o el navegador pidió otro toque)? */
 export function esCancelacion(e: unknown): boolean {
   let x: unknown = e;
