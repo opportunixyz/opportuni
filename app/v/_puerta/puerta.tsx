@@ -6,6 +6,7 @@ import { stellarPublica } from "../../lib/stellar/config";
 import { CONSEJOS } from "./consejos";
 import { avisarCuenta, detalleDe, esCancelacion, firmarReto, guardaPasskeys, puedePasskey } from "./passkey-cliente";
 import type { CuentaCreada } from "./stellar-cliente";
+import { useTurnstile } from "./turnstile";
 
 // La pantalla de la puerta (PRD F1, paso 3): la vacante arriba, el formulario
 // del pasaporte con la explicación de cada pregunta, la casilla de términos
@@ -162,6 +163,7 @@ function Formulario({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<{ clave: string; texto: string } | null>(null);
   const [yaExiste, setYaExiste] = useState(false);
+  const ts = useTurnstile();
 
   // El kit se descarga mientras llena el formulario, para que al crear la
   // cuenta no haya espera antes del Face ID.
@@ -186,12 +188,13 @@ function Formulario({
       const r = await fetch("/api/pasaporte", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacante: vacante.id, canal, respuestas: valores, terminos: true }),
+        body: JSON.stringify({ vacante: vacante.id, canal, respuestas: valores, terminos: true, turnstile: ts.token }),
       });
       const d = await r.json().catch(() => ({}));
       if (d.ok && d.destino) {
         return onCreado(d.destino, typeof valores.nombre === "string" ? valores.nombre : "", d.registrado === true);
       }
+      ts.renovar();
       if (d.existe) {
         setYaExiste(true);
         setEnviando(false);
@@ -274,9 +277,15 @@ function Formulario({
         <p className="text-sm text-red-600 mt-3">{error.texto}</p>
       )}
 
-      <button type="submit" disabled={enviando} className="btn-rosa w-full text-center mt-6 disabled:opacity-60">
-        {enviando ? "Creando tu pasaporte…" : "Crear mi pasaporte y ver la vacante"}
+      {ts.widget}
+      <button
+        type="submit"
+        disabled={enviando || ts.esperando}
+        className="btn-rosa w-full text-center mt-6 disabled:opacity-60"
+      >
+        {enviando ? "Creando tu pasaporte…" : ts.esperando ? "Verificando…" : "Crear mi pasaporte y ver la vacante"}
       </button>
+      {ts.atorado && <BotonSecundario onClick={onFalla}>Ir a la vacante sin pasaporte</BotonSecundario>}
 
       <button
         type="button"
@@ -675,6 +684,7 @@ function YaTengo({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [noEncontrado, setNoEncontrado] = useState(false);
+  const ts = useTurnstile();
   const [reto, setReto] = useState<string | null>(null);
   const [conFace, setConFace] = useState(false);
   const [errorFace, setErrorFace] = useState("");
@@ -727,10 +737,11 @@ function YaTengo({
       const r = await fetch("/api/pasaporte/entrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacante: vacanteId, canal, lada, numero }),
+        body: JSON.stringify({ vacante: vacanteId, canal, lada, numero, turnstile: ts.token }),
       });
       const d = await r.json().catch(() => ({}));
       if (d.ok && d.destino) return onListo(d.destino);
+      ts.renovar();
       if (d.noEncontrado) setNoEncontrado(true);
       else if (r.status >= 500 || !d.error) return onFalla();
       else setError(d.error);
@@ -798,9 +809,15 @@ function YaTengo({
         </p>
       )}
 
-      <button type="submit" disabled={enviando || !numero.trim()} className="btn-rosa w-full text-center mt-6 disabled:opacity-60">
-        {enviando ? "Buscando tu pasaporte…" : "Entrar y ver la vacante"}
+      {ts.widget}
+      <button
+        type="submit"
+        disabled={enviando || !numero.trim() || ts.esperando}
+        className="btn-rosa w-full text-center mt-6 disabled:opacity-60"
+      >
+        {enviando ? "Buscando tu pasaporte…" : ts.esperando ? "Verificando…" : "Entrar y ver la vacante"}
       </button>
+      {ts.atorado && <BotonSecundario onClick={onFalla}>Ir a la vacante sin pasaporte</BotonSecundario>}
       <button
         type="button"
         onClick={onVolver}

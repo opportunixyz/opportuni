@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const r = await enviarSoroban(cfg, body.func as string, body.auth as string[]);
+    const r = await enviarSoroban(cfg, body.func as string, body.auth as string[], v.tipo);
     return NextResponse.json({ success: true, data: r });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Channels falló";
