@@ -13,7 +13,7 @@ import {
   scValToNative,
   xdr,
 } from "@stellar/stellar-sdk";
-import { enviarSoroban, ErrorChannels } from "./channels";
+import { enviarSoroban, ErrorChannels, type TipoEnvio } from "./channels";
 import type { StellarServidor } from "./config";
 
 // Cuentas del pasaporte en Stellar (PRD 8.3 y 8.5), del lado del servidor:
@@ -115,12 +115,14 @@ export interface Enviada {
 async function enviarYEsperar(
   cfg: StellarServidor,
   func: xdr.HostFunction,
-  auth: xdr.SorobanAuthorizationEntry[]
+  auth: xdr.SorobanAuthorizationEntry[],
+  tipo: TipoEnvio
 ): Promise<Enviada> {
   const r = await enviarSoroban(
     cfg,
     func.toXDR("base64"),
-    auth.map((a) => a.toXDR("base64"))
+    auth.map((a) => a.toXDR("base64")),
+    tipo
   );
   if (!r.hash) throw new ErrorChannels(`Channels no devolvió hash (estado ${r.status ?? "?"}).`);
   const res = await rpcDe(cfg).pollTransaction(r.hash, { attempts: 20, sleepStrategy: () => 1500 });
@@ -250,7 +252,7 @@ export async function crearCuentaRespaldo(cfg: StellarServidor): Promise<CuentaR
       return authorizeEntry(e, emisor, simDeploy.ledger + 100, cfg.passphrase);
     })
   );
-  await enviarYEsperar(cfg, deploy, authDeploy);
+  await enviarYEsperar(cfg, deploy, authDeploy, "despliegue");
 
   // 2. Regla de Opportuni, firmada con la llave de respaldo (regla default).
   const hasta = (await ledgerActual(cfg)) + VIGENCIA_REGLA;
@@ -273,7 +275,7 @@ export async function crearCuentaRespaldo(cfg: StellarServidor): Promise<CuentaR
       );
     })
   );
-  const { retval } = await enviarYEsperar(cfg, regla, authRegla);
+  const { retval } = await enviarYEsperar(cfg, regla, authRegla, "regla");
   const reglaId = retval ? Number((scValToNative(retval) as { id: number }).id) : NaN;
   if (!Number.isInteger(reglaId)) throw new Error("La regla no devolvió su id.");
 
@@ -362,7 +364,7 @@ export async function emitirCredencial(
     }
   }
 
-  const { hash: txHash, retval } = await enviarYEsperar(cfg, func, auth);
+  const { hash: txHash, retval } = await enviarYEsperar(cfg, func, auth, "emision");
   const id = retval ? Number(scValToNative(retval)) : NaN;
   return { hash: txHash, id: Number.isFinite(id) ? id : null };
 }

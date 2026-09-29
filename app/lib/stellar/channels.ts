@@ -1,3 +1,4 @@
+import { svcRpc } from "../supabase";
 import type { StellarServidor } from "./config";
 
 // Envío de transacciones por OpenZeppelin Channels (PRD 8.2): paga las fees y
@@ -42,8 +43,22 @@ async function llamar(cfg: StellarServidor, params: Record<string, unknown>): Pr
   };
 }
 
-/** Envía una invocación firmada (func + auth en base64). */
-export function enviarSoroban(cfg: StellarServidor, func: string, auth: string[]) {
+export type TipoEnvio = "despliegue" | "regla" | "emision";
+
+/** Envíos a Stellar por hora, entre todos (migración 0011). Configurable. */
+function topeHora(): number {
+  const n = Number(process.env.STELLAR_TOPE_HORA);
+  return Number.isInteger(n) && n > 0 ? n : 600;
+}
+
+/**
+ * Envía una invocación firmada (func + auth en base64). Antes aparta un lugar
+ * en el tope por hora: si está lleno, no sale y quien llamó lo reintenta
+ * después.
+ */
+export async function enviarSoroban(cfg: StellarServidor, func: string, auth: string[], tipo: TipoEnvio) {
+  const hayCupo = await svcRpc<boolean>("stellar_cupo", { p_tipo: tipo, p_max_hora: topeHora() });
+  if (!hayCupo) throw new ErrorChannels("Se llenó el tope de envíos de esta hora; se reintenta después.");
   return llamar(cfg, { func, auth });
 }
 

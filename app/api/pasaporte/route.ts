@@ -6,6 +6,7 @@ import { metaDeHeaders } from "../../lib/pasaporte/metadata";
 import { buscarVacante, canalValido, destinoDe, nuevoSlugPasaporte, registrarClick } from "../../lib/pasaporte/puerta";
 import { TERMINOS_VERSION } from "../../lib/pasaporte/terminos";
 import { dentroDelLimite, ipDe } from "../../lib/limite";
+import { verificarTurnstile } from "../../lib/pasaporte/turnstile";
 import { svcRpc } from "../../lib/supabase";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 // Si la base falla, responde con el destino igual para que el joven llegue a
 // la vacante (RF1 y RF11).
 export async function POST(req: NextRequest) {
-  let body: { vacante?: unknown; canal?: unknown; respuestas?: unknown; terminos?: unknown };
+  let body: { vacante?: unknown; canal?: unknown; respuestas?: unknown; terminos?: unknown; turnstile?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -37,6 +38,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Demasiados intentos. Espera unos minutos." }, { status: 429 });
   }
   if (lookup.estado === "sin_base") return sigue();
+
+  // Frena a los scripts que crean pasaportes (y wallets) en masa.
+  if (!(await verificarTurnstile(body.turnstile, ipDe(req.headers)))) {
+    return NextResponse.json(
+      { ok: false, error: "No pudimos comprobar que eres una persona. Intenta de nuevo.", clave: "turnstile" },
+      { status: 403 }
+    );
+  }
 
   const respuestas = (body.respuestas && typeof body.respuestas === "object" ? body.respuestas : {}) as Respuestas;
 
