@@ -34,6 +34,15 @@ Decisiones ya tomadas (no reabrir):
 
 Plan por fases (PRD sección 10), fases 0 y 1 en producción desde el 29 sep (PR #1): 0 base propia, 1 links, formulario y puerta, 2 Stellar (arranca de cero: los gates del 26 y 27 sep no se corrieron; solo se comprobó que en iPhone el link de WhatsApp abre Safari y la passkey funciona), 3 operación y API, 4 conector de Claude para Vianey.
 
+Fase 2, cómo quedó (29 sep, probado en testnet de punta a punta desde Vercel):
+- **La emisión con permiso delegado funciona** (no hace falta el plan B de 8.4). Clave: `issue` pide primero `subject.require_auth()` y después la del emisor; al revés, el `__check_auth` de la cuenta no encuentra la firma delegada del emisor.
+- La cuenta con passkey pide **dos Face ID**: crear la cuenta y el permiso de Opportuni (el constructor de la cuenta solo crea la regla default). Si el navegador perdió el toque del formulario, la puerta pide un toque más antes de irse al respaldo.
+- La cuenta de respaldo usa un signer **Ed25519 externo** (verifier del kit), no una cuenta G: así no hay que fondear una cuenta por joven. El emisor solo es el `deployer`.
+- El relayer del kit es nuestra ruta `/api/pasaporte/relayer` (no el Worker del kit): solo deja pasar el despliegue de la cuenta con passkey y la regla de Opportuni.
+- Stellar se prende solo con sus variables (PRD 8.8 más `NEXT_PUBLIC_ED25519_VERIFIER`). Hoy están solo en el Preview de `feature/pasaporte-stellar` con **testnet**; producción sigue como fase 1 hasta pasar a mainnet. Pruebas con teléfono en `beta.opportuni.xyz` (dominio de esa rama).
+- `pasaportes.red` y `credenciales.red` separan testnet de mainnet: una cuenta de pruebas no cuenta como la de mainnet.
+- Compilar el contrato pide Rust 1.91.1 y stellar-cli 25.2 o más nueva (`contracts/credential-registry/rust-toolchain.toml`).
+
 Base propia desplegada en el servidor (29 sep): ver [infra/db/README.md](infra/db/README.md) y migraciones en `db/migrations/`. Servidor: acceso de Claude Code con `ssh opportuni-db` (usuario `claude`, llave propia, permiso en `.claude/settings.local.json`). Antes de cambiar algo en el servidor, proponerlo y esperar el visto bueno de Roman.
 
 ## Git
