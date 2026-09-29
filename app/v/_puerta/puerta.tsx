@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Pregunta, Opciones } from "../../lib/pasaporte/formulario";
 import { stellarPublica } from "../../lib/stellar/config";
+import { CONSEJOS } from "./consejos";
 import { avisarCuenta, detalleDe, esCancelacion, firmarReto, puedePasskey } from "./passkey-cliente";
 import type { CuentaCreada } from "./stellar-cliente";
 
@@ -76,13 +77,7 @@ export default function Puerta(props: Props) {
           </h1>
         </div>
 
-        {vista === "listo" && (
-          <div className="bento p-8 text-center" style={{ background: "white" }}>
-            <div className="text-4xl mb-2">🎉</div>
-            <h2 className="text-2xl font-black mb-1">{mensajeListo}</h2>
-            <p className="text-sm text-gray-500">Te llevamos a la vacante…</p>
-          </div>
-        )}
+        {vista === "listo" && <Espera titulo={mensajeListo} texto="Te llevamos a la vacante…" />}
 
         {vista === "form" && (
           <Formulario
@@ -447,15 +442,19 @@ function Chips({
 
 /* ---------------- cuenta del pasaporte ---------------- */
 
-type Fase = "creando" | "tocar" | "regla" | "firmando";
+// Del primer Face ID hasta la vacante todo es una sola espera: el logo gira y
+// rotan tips de Opportuni. Solo se detiene si el teléfono pide un toque más.
+type Fase = "creando" | "tocar" | "autorizando" | "regla" | "firmando";
 
-// Si el navegador rechaza el Face ID al instante (se perdió el toque del
-// formulario), pedimos un toque más en vez de irnos al respaldo.
+// Si el navegador rechaza el Face ID al instante (se perdió el toque), pedimos
+// un toque más en vez de irnos al respaldo.
 const RECHAZO_INMEDIATO_MS = 900;
 const TOPE_CREAR_MS = 45_000;
 // El permiso no tiene "Ahora no": si el Face ID falla se reintenta, y solo
 // después de dos intentos seguimos a la vacante (nunca sin salida, RF1).
 const INTENTOS_REGLA = 2;
+const TEXTO_PERMISO =
+  "Autoriza a Opportuni para agregar credenciales a tu pasaporte, como tu CV verificado. Es lo único que puede hacer: no puede mover nada más de tu cuenta.";
 
 function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: string) => void }) {
   const [fase, setFase] = useState<Fase>("creando");
@@ -499,28 +498,31 @@ function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: st
     if (terminado.current) return;
     try {
       regla.current = await (await import("./stellar-cliente")).prepararRegla();
-      setFase("regla");
     } catch (e) {
       guardar(null);
       avisarCuenta({ resultado: "fallo", motivo: "regla_error", detalle: detalleDe(e) });
-      terminar();
+      return terminar();
     }
+    // Donde el navegador lo permite (Android), el segundo Face ID sale solo.
+    autorizar(false);
   };
 
-  const autorizar = async () => {
+  const autorizar = async (conToque: boolean) => {
     if (!regla.current) return;
-    setFase("firmando");
+    setFase(conToque ? "firmando" : "autorizando");
     setErrorRegla("");
+    const t0 = performance.now();
     try {
       const id = await (await import("./stellar-cliente")).firmarRegla(regla.current);
       guardar(id);
-      terminar("Listo, ya tienes tu Pasaporte Opportuni ✦");
+      terminar("¡Listo! Ya tienes tu Pasaporte Opportuni ✦");
     } catch (e) {
+      // Sin toque el navegador lo rechaza al instante: pedimos el toque sin contarlo.
+      if (!conToque && esCancelacion(e) && performance.now() - t0 < RECHAZO_INMEDIATO_MS) return setFase("regla");
       intentosRegla.current += 1;
       if (intentosRegla.current < INTENTOS_REGLA) {
         setErrorRegla("No se completó. Inténtalo otra vez.");
-        setFase("regla");
-        return;
+        return setFase("regla");
       }
       guardar(null);
       avisarCuenta({
@@ -541,62 +543,86 @@ function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: st
 
   if (fase === "tocar") {
     return (
-      <div className="bento p-6 text-center" style={{ background: "white" }}>
-        <div className="text-4xl mb-2">🔐</div>
-        <h2 className="text-xl font-black mb-2">Protege tu pasaporte</h2>
-        <p className="text-sm text-gray-600 mb-5">
-          Con tu Face ID o tu huella. Así solo tú puedes usarlo, en este y en tus otros teléfonos.
-        </p>
-        <button type="button" onClick={() => crear(true)} className="btn-rosa w-full text-center">
+      <Espera
+        girando={false}
+        titulo="Protege tu pasaporte"
+        texto="Con tu Face ID o tu huella. Así solo tú puedes usarlo, en este y en tus otros teléfonos."
+      >
+        <button type="button" onClick={() => crear(true)} className="btn-rosa w-full text-center mt-5">
           Proteger con Face ID o huella
         </button>
         <BotonSecundario onClick={() => aRespaldo("cancelada")}>Ahora no, llévame a la vacante</BotonSecundario>
-      </div>
+      </Espera>
     );
   }
 
   if (fase === "regla") {
     return (
-      <div className="bento p-6 text-center" style={{ background: "white" }}>
-        <div className="text-4xl mb-2">✦</div>
-        <h2 className="text-xl font-black mb-2">Último paso</h2>
-        <p className="text-sm text-gray-600 mb-5">
-          Autoriza a Opportuni para agregar credenciales a tu pasaporte. Es lo único que puede hacer: no puede mover
-          nada más de tu cuenta.
-        </p>
-        <button type="button" onClick={autorizar} className="btn-rosa w-full text-center">
+      <Espera girando={false} titulo="Último paso" texto={TEXTO_PERMISO}>
+        <button type="button" onClick={() => autorizar(true)} className="btn-rosa w-full text-center mt-5">
           Autorizar con Face ID o huella
         </button>
         {errorRegla && <p className="text-xs text-red-600 mt-3">{errorRegla}</p>}
-      </div>
+      </Espera>
     );
   }
 
-  if (fase === "firmando") {
-    return <Cargando titulo="Guardando tu Pasaporte Opportuni" texto="Un momento, ya casi." />;
-  }
-
+  if (fase === "autorizando") return <Espera titulo="Último paso: autoriza a Opportuni" texto={TEXTO_PERMISO} />;
+  if (fase === "firmando") return <Espera titulo="Guardando tu Pasaporte Opportuni…" texto="Un momento, ya casi." />;
   return (
-    <Cargando
-      titulo="Tu Pasaporte Opportuni se está creando"
+    <Espera
+      titulo="Tu Pasaporte Opportuni se está creando…"
       texto="Usa tu Face ID o tu huella cuando te lo pida el teléfono."
     />
   );
 }
 
-/** El logo de Opportuni girando mientras se crea o se guarda el pasaporte. */
-function Cargando({ titulo, texto }: { titulo: string; texto: string }) {
+// El tip sigue donde iba aunque cambie la pantalla.
+let consejoActual = Math.floor(Math.random() * CONSEJOS.length);
+
+/** Pantalla de espera: logo de Opportuni girando, mensaje y tips que rotan. */
+function Espera({
+  titulo,
+  texto,
+  girando = true,
+  children,
+}: {
+  titulo: string;
+  texto?: string;
+  girando?: boolean;
+  children?: React.ReactNode;
+}) {
+  const [i, setI] = useState(consejoActual);
+  useEffect(() => {
+    const t = setInterval(() => {
+      consejoActual = (consejoActual + 1) % CONSEJOS.length;
+      setI(consejoActual);
+    }, 5000);
+    return () => clearInterval(t);
+  }, []);
+
   return (
-    <div className="bento p-8 text-center" style={{ background: "white" }} role="status" aria-live="polite">
+    <div className="bento p-7 text-center" style={{ background: "white" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/logo-opportuni.png"
         alt=""
-        className="mx-auto mb-5 motion-safe:animate-spin"
+        className={`mx-auto mb-5 ${girando ? "motion-safe:animate-spin" : ""}`}
         style={{ width: 72, height: 72, animationDuration: "1.4s" }}
       />
-      <h2 className="text-xl font-black mb-1">{titulo}…</h2>
-      <p className="text-sm text-gray-500">{texto}</p>
+      <div role="status" aria-live="polite">
+        <h2 className="text-xl font-black mb-1">{titulo}</h2>
+        {texto && <p className="text-sm text-gray-500 leading-snug">{texto}</p>}
+      </div>
+      {children}
+      <div className="mt-6 rounded-2xl px-4 py-3 text-left" style={{ background: "var(--cream)" }}>
+        <p className="text-[11px] font-mono font-bold uppercase mb-1" style={{ color: "var(--nar)" }}>
+          Tip Opportuni ✦
+        </p>
+        <p key={i} className="text-sm leading-snug animate-slide-in-right">
+          {CONSEJOS[i]}
+        </p>
+      </div>
     </div>
   );
 }

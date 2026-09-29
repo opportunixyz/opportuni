@@ -20,13 +20,28 @@ interface Joven {
   dispositivos: number;
   sin_confirmar: number;
   ultimo_click: string | null;
+  cuenta_modo: "passkey" | "respaldo" | null;
+  cuenta_estado: "creando" | "lista" | "sin_permiso" | "fallida" | null;
+  cv_estado: "pendiente" | "enviando" | "confirmada" | "fallida" | null;
 }
+
+const CUENTA: Record<string, string> = {
+  passkey: "Face ID / huella",
+  respaldo: "Respaldo",
+};
+const ESTADO_CUENTA: Record<string, string> = {
+  creando: "creándose",
+  sin_permiso: "sin permiso",
+  fallida: "falló, se reintenta",
+};
 
 export default function JovenesTab() {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Joven[] | null>(null);
   const [err, setErr] = useState("");
   const [elegido, setElegido] = useState<Joven | null>(null);
+  const [emitiendo, setEmitiendo] = useState<string | null>(null);
+  const [aviso, setAviso] = useState("");
 
   const cargar = useCallback(async (busqueda: string) => {
     setErr("");
@@ -42,6 +57,26 @@ export default function JovenesTab() {
     return () => clearTimeout(t);
   }, [q, cargar]);
 
+  // CV verificado (PRD F2): solo a quien pagó y cuyo CV ya pasa filtros ATS.
+  const emitirCv = async (j: Joven) => {
+    if (!confirm(`¿Emitir el CV verificado de ${j.nombre}?\n\nSolo si ya pagó y su CV pasa los filtros ATS.`)) return;
+    setEmitiendo(j.slug);
+    setAviso("");
+    try {
+      const d = await api<{ mensaje: string }>("/api/admin/jovenes", {
+        method: "POST",
+        body: JSON.stringify({ slug: j.slug, accion: "cv_verificado" }),
+      });
+      setAviso(`${j.nombre}: ${d.mensaje}`);
+      await cargar(q);
+      setTimeout(() => void cargar(q), 15_000);
+      setTimeout(() => void cargar(q), 40_000);
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : "No se pudo emitir.");
+    }
+    setEmitiendo(null);
+  };
+
   return (
     <>
       <input
@@ -52,6 +87,11 @@ export default function JovenesTab() {
         style={{ maxWidth: 360 }}
       />
       {err && <p className="text-sm text-red-600 mb-4">{err}</p>}
+      {aviso && (
+        <p className="text-sm mb-4 rounded-2xl px-4 py-3" style={{ background: "var(--cream2)" }}>
+          {aviso}
+        </p>
+      )}
       {!rows && !err && <Spinner />}
       {rows && (
         <>
@@ -61,7 +101,7 @@ export default function JovenesTab() {
           </p>
           <SubTable
             rows={rows}
-            cols={["Nombre", "WhatsApp", "Estado", "Áreas", "Edad", "Vacantes", "Dispositivos", "Alta"]}
+            cols={["Nombre", "WhatsApp", "Estado", "Áreas", "Edad", "Vacantes", "Dispositivos", "Pasaporte", "Alta"]}
             render={(j) => [
               <span key="n">
                 <b>{j.nombre}</b>
@@ -92,6 +132,38 @@ export default function JovenesTab() {
                   <span className="block text-[11px]" style={{ color: "var(--nar)" }}>
                     {j.sin_confirmar} sin confirmar
                   </span>
+                )}
+              </span>,
+              <span key="p" className="text-xs">
+                {j.cuenta_modo ? CUENTA[j.cuenta_modo] : "Sin cuenta"}
+                {j.cuenta_estado && ESTADO_CUENTA[j.cuenta_estado] && (
+                  <span className="block text-[11px]" style={{ color: "var(--nar)" }}>
+                    {ESTADO_CUENTA[j.cuenta_estado]}
+                  </span>
+                )}
+                {j.cv_estado === "confirmada" ? (
+                  <a
+                    href={`/p/${j.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block font-bold mt-1"
+                    style={{ color: "var(--teal)" }}
+                  >
+                    ✓ CV verificado
+                  </a>
+                ) : j.cv_estado === "pendiente" || j.cv_estado === "enviando" ? (
+                  <span className="block font-bold mt-1" style={{ color: "var(--nar)" }}>
+                    CV {j.cv_estado === "pendiente" ? "pendiente" : "emitiéndose"}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => emitirCv(j)}
+                    disabled={emitiendo === j.slug}
+                    className="block font-bold mt-1 disabled:opacity-50"
+                    style={{ color: "var(--lila)", cursor: "pointer", background: "none", border: "none", padding: 0 }}
+                  >
+                    {emitiendo === j.slug ? "Emitiendo…" : j.cv_estado === "fallida" ? "Reintentar CV verificado" : "Emitir CV verificado"}
+                  </button>
                 )}
               </span>,
               <span key="a" className="text-xs">{fmtDate(j.created_at)}</span>,

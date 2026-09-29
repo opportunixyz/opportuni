@@ -12,9 +12,9 @@ import {
   type TipoCredencial,
 } from "./cuentas";
 
-// El pasaporte en Stellar visto desde la app (PRD 8.3 y 8.5): encolar la
-// credencial de cada click, crear la cuenta de respaldo, emitir y guardar la
-// cuenta con passkey que crea el navegador. Si Stellar no está configurado,
+// El pasaporte en Stellar visto desde la app (PRD 8.3 y 8.5): crear la cuenta
+// de respaldo, emitir credenciales y guardar la cuenta con passkey que crea el
+// navegador. Si Stellar no está configurado,
 // todo esto no hace nada y la puerta sigue como en la fase 1.
 
 /** Deployer compartido del kit (docs/deployments del kit): deriva la dirección de la cuenta con passkey. */
@@ -142,37 +142,6 @@ export async function asegurarRespaldo(slug: string, motivo: string, cfg: Stella
     return;
   }
   await emitirPendientes(slug, cfg);
-}
-
-// ---------------------------------------------------------------------------
-// Click → credencial `vacante`
-// ---------------------------------------------------------------------------
-
-/**
- * Encola la credencial `vacante` de un click desde un dispositivo confirmado y
- * la emite. Con `crearCuenta`, si el pasaporte no tiene cuenta en esta red le
- * crea la de respaldo (pasaportes de la fase 1, o quien cerró la puerta a
- * medias).
- */
-export async function credencialDeClick(tokenHash: string, vacanteId: string, crearCuenta: boolean) {
-  const cfg = stellarServidor();
-  if (!cfg) return;
-  const { salt, hash: h } = hashCredencial("vacante", vacanteId);
-  let r: { id: number | null; slug: string; cuenta_lista: boolean; sin_cuenta: boolean } | null;
-  try {
-    r = await svcRpc("credencial_vacante", {
-      p_token_hash: tokenHash,
-      p_vacante_id: vacanteId,
-      p_red: cfg.red,
-      p_salt: salt,
-      p_hash: h,
-    });
-  } catch (e) {
-    return log("no se encoló la credencial", e);
-  }
-  if (!r) return;
-  if (r.cuenta_lista && r.id) return emitir(r.id, cfg);
-  if (r.sin_cuenta && crearCuenta) return asegurarRespaldo(r.slug, "click", cfg);
 }
 
 // ---------------------------------------------------------------------------

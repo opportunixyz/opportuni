@@ -5,12 +5,10 @@ import { DEVICE_COOKIE, deviceCookieOptions, nuevoDispositivo } from "../../../l
 import { metaDeHeaders } from "../../../lib/pasaporte/metadata";
 import { verificarAsercion, type Asercion } from "../../../lib/pasaporte/passkey";
 import { buscarVacante, canalValido, destinoDe, registrarClick } from "../../../lib/pasaporte/puerta";
-import { credencialDeClick } from "../../../lib/stellar/pasaporte";
 import { svcRpc, svcSelect } from "../../../lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 // POST: "Ya tengo pasaporte" con Face ID o huella (PRD F1, otro dispositivo,
 // opción 1; RF20). Si la aserción corresponde a la passkey de un pasaporte,
@@ -57,11 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (vacante) {
       const meta = metaDeHeaders(req.headers);
-      waitUntil(
-        registrarClick(disp.tokenHash, vacante.id, canal, meta).then(() =>
-          credencialDeClick(disp.tokenHash, vacante.id, true)
-        )
-      );
+      waitUntil(registrarClick(disp.tokenHash, vacante.id, canal, meta));
     }
 
     const out = NextResponse.json({ ok: true, destino, registrado: true });

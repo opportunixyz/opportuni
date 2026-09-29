@@ -14,14 +14,10 @@ import {
   registrarEvento,
 } from "../../../lib/pasaporte/puerta";
 import { TERMINOS_TEXTO } from "../../../lib/pasaporte/terminos";
-import { credencialDeClick } from "../../../lib/stellar/pasaporte";
 import Puerta from "../../_puerta/puerta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// La credencial del click (y, si hace falta, la cuenta de respaldo) se hace
-// después del redirect con waitUntil; puede tardar ~30 s en Stellar.
-export const maxDuration = 60;
 
 // La puerta del Pasaporte Opportuni (PRD F1): /v/{slug} y /v/{slug}/{canal}.
 // - Crawlers (preview de WhatsApp y redes): Open Graph de la vacante, sin click.
@@ -78,11 +74,7 @@ export default async function VacantePuerta({ params }: { params: Params }) {
 
   const disp = leerDispositivo(cookies().get(DEVICE_COOKIE)?.value);
   if (disp) {
-    waitUntil(
-      registrarClick(disp.tokenHash, vacante.id, canal, meta).then(() =>
-        credencialDeClick(disp.tokenHash, vacante.id, true)
-      )
-    );
+    waitUntil(registrarClick(disp.tokenHash, vacante.id, canal, meta));
     redirect(destino);
   }
 

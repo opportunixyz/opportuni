@@ -19,7 +19,7 @@ interface Publico {
   desde: string;
   cuenta: string | null;
   modo: "passkey" | "respaldo" | null;
-  credenciales: { tipo: "vacante" | "cv_verificado"; fecha: string; tx: string | null }[];
+  credenciales: { tipo: string; fecha: string; tx: string | null }[];
 }
 
 const cargar = cache(async (slug: string): Promise<Publico | null> => {
@@ -43,6 +43,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
+// Nombre público de cada tipo de credencial.
+const TITULOS: Record<string, { titulo: string; color: string }> = {
+  cv_verificado: { titulo: "CV verificado por Opportuni", color: "var(--teal)" },
+};
+
 const mes = (f: string) => new Date(f).toLocaleDateString("es-MX", { month: "short", year: "numeric" });
 const dia = (f: string) => new Date(f).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 
@@ -61,8 +66,7 @@ export default async function PasaportePublico({
   waitUntil(svcInsert("pasaporte_eventos", { tipo: "vista_pasaporte", slug: p.slug, src, user_agent: ua }).catch(() => undefined));
 
   const explorer = stellarPublica()?.red === "testnet" ? "testnet" : "public";
-  const cvs = p.credenciales.filter((c) => c.tipo === "cv_verificado");
-  const vacantes = p.credenciales.filter((c) => c.tipo === "vacante");
+  const credenciales = p.credenciales.filter((c) => TITULOS[c.tipo]);
 
   return (
     <main className="min-h-screen px-4 py-10" style={{ background: "var(--cream)" }}>
@@ -91,30 +95,20 @@ export default async function PasaportePublico({
           )}
         </div>
 
-        {p.credenciales.length === 0 ? (
+        {credenciales.length === 0 ? (
           <div className="bento p-6 text-center" style={{ background: "white" }}>
             <p className="text-sm text-gray-500">Todavía no hay credenciales en este pasaporte.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {cvs.map((c, i) => (
+            {credenciales.map((c, i) => (
               <Credencial
-                key={`cv-${i}`}
-                titulo="CV verificado por Opportuni"
+                key={i}
+                titulo={TITULOS[c.tipo].titulo}
                 fecha={dia(c.fecha)}
                 tx={c.tx}
                 explorer={explorer}
-                color="var(--teal)"
-              />
-            ))}
-            {vacantes.map((c, i) => (
-              <Credencial
-                key={`v-${i}`}
-                titulo="Vacante abierta vía Opportuni"
-                fecha={mes(c.fecha)}
-                tx={c.tx}
-                explorer={explorer}
-                color="var(--rosa)"
+                color={TITULOS[c.tipo].color}
               />
             ))}
           </div>

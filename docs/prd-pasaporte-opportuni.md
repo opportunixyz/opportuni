@@ -17,6 +17,14 @@
 6. **API de admin con llaves por rol** para operar desde Claude Code (Roman) y un conector de Claude en claude.ai para Vianey (v1.1).
 7. **Base nueva en un servidor propio** en Hetzner (8.10). De Supabase no se migra nada.
 
+### Qué cambió el 29 sep en la noche (fase 2)
+
+1. **"Vacante abierta" ya no va a la cadena.** Abrir un link prueba poco y sería la credencial más frecuente, o sea la más cara (medido en testnet: ~0.1 XLM por credencial guardada, 97% renta). El click sigue en la base para métricas y reportes.
+2. **En Stellar solo credenciales que valen:** `cv_verificado` (desde /admin › Jóvenes), y después LinkedIn revisado, credenciales de aliados (Platzi y otras) y postulación confirmada por la empresa. Se guardan en el contrato (~0.05 a 0.07 XLM cada una) para que una empresa las compruebe sin depender de nosotros.
+3. **El permiso de Opportuni no tiene "Ahora no".** Sin él no se pueden emitir credenciales. Si el Face ID falla se reintenta; después de dos intentos el joven sigue a la vacante (RF1).
+4. **Espera continua:** del primer Face ID hasta la vacante, el logo de Opportuni gira con tips de Opportuni. La puerta no dice "Stellar".
+5. **Si Channels se acaba o se topa** (termina la alianza SDF y OpenZeppelin en dic 2026, y su tope diario no es público), Opportuni paga las comisiones desde la cuenta del emisor.
+
 ## 1. Qué es, en una frase
 
 Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: la primera vez el joven crea su Pasaporte (una sola vez, con Face ID o huella) y cae en la vacante; desde entonces sabemos qué vacantes abre cada quien, y lo que Opportuni hace por él (su CV verificado) queda como credencial en Stellar mainnet que cualquier empresa puede comprobar con un QR.
@@ -47,7 +55,7 @@ Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: l
 - **Registro de cada click** en la base con pasaporte, vacante, canal, estado y la metadata permitida (F1).
 - Cuenta del joven: smart account de OpenZeppelin con passkey (`smart-account-kit`) en mainnet, o **cuenta de respaldo** si la passkey falla.
 - Permiso limitado para Opportuni (context rule) para emitir sin volver a pedir Face ID.
-- Dos credenciales: **`vacante`** (automática, primera vez que abre cada vacante) y **`cv_verificado`** (manual, clientes pagados).
+- Credenciales en cadena: **`cv_verificado`** (manual, clientes pagados). Después, LinkedIn revisado, aliados y postulación confirmada. Abrir una vacante no es credencial (29 sep): queda en la base.
 - Pasaporte público `/p/[slug]` y QR descargable.
 - /admin con contraseña: Vacantes, Jóvenes, Pagos y CV verificado, Empresas (panel en porcentajes), Formulario, Emisiones.
 - API de admin con llaves por rol y servidor MCP para Claude Code.
@@ -85,7 +93,7 @@ Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: l
 Para que el link no se note: dominio propio, slug en palabras, sin parámetros, y el preview de WhatsApp muestra el título y la empresa de la vacante con la marca de Opportuni (Open Graph de la puerta).
 
 1. El joven toca el link en WhatsApp. El servidor descarta bots (el preview de WhatsApp y otros crawlers no cuentan como click) y lee la cookie del dispositivo.
-2. **Dispositivo conocido:** registra el click en la base (pasaporte, vacante, canal y metadata), encola la credencial `vacante` si es la primera vez que abre esa vacante, y hace redirect a la vacante. No ve ninguna pantalla ni vuelve a llenar nada, y nada de esto frena el redirect.
+2. **Dispositivo conocido:** registra el click en la base (pasaporte, vacante, canal y metadata) y hace redirect a la vacante (desde el 29 sep abrir una vacante ya no emite credencial en la cadena). No ve ninguna pantalla ni vuelve a llenar nada, y nada de esto frena el redirect.
 3. **Dispositivo nuevo:** ve la puerta, una sola pantalla con la vacante arriba ("Nubank · Product Manager"):
    - *"Para ver esta vacante crea tu Pasaporte Opportuni. Lo llenas una sola vez."*
    - **El formulario del pasaporte**, cada pregunta con su explicación corta debajo:

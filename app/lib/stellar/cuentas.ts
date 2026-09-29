@@ -290,8 +290,11 @@ export async function crearCuentaRespaldo(cfg: StellarServidor): Promise<CuentaR
 // Emisión (PRD 8.5)
 // ---------------------------------------------------------------------------
 
-/** Tipos en la app → Symbol corto en cadena (PRD 8.4). */
-export const TIPO_EN_CADENA = { vacante: "vacante", cv_verificado: "cv_verif" } as const;
+/**
+ * Tipos en la app → Symbol corto en cadena (PRD 8.4). Solo lo que vale como
+ * credencial: abrir una vacante ya no va a la cadena (29 sep), queda en la base.
+ */
+export const TIPO_EN_CADENA = { cv_verificado: "cv_verif" } as const;
 export type TipoCredencial = keyof typeof TIPO_EN_CADENA;
 
 export interface Emitida {
