@@ -10,7 +10,7 @@ import type { CuentaCreada } from "./stellar-cliente";
 // del pasaporte con la explicación de cada pregunta, la casilla de términos
 // y "Ya tengo pasaporte". Nunca deja al joven sin salida: si algo falla del
 // lado del servidor, lo manda a la vacante igual.
-// Fase 2: después del formulario, la cuenta en Stellar con passkey (PRD 8.3).
+// Fase 2: después del formulario, la cuenta del pasaporte con passkey (PRD 8.3).
 // Si la passkey falla o se cancela, el servidor crea la cuenta de respaldo y
 // el joven llega a la vacante igual (RF1).
 
@@ -445,7 +445,7 @@ function Chips({
   );
 }
 
-/* ---------------- cuenta en Stellar ---------------- */
+/* ---------------- cuenta del pasaporte ---------------- */
 
 type Fase = "creando" | "tocar" | "regla" | "firmando";
 
@@ -453,9 +453,14 @@ type Fase = "creando" | "tocar" | "regla" | "firmando";
 // formulario), pedimos un toque más en vez de irnos al respaldo.
 const RECHAZO_INMEDIATO_MS = 900;
 const TOPE_CREAR_MS = 45_000;
+// El permiso no tiene "Ahora no": si el Face ID falla se reintenta, y solo
+// después de dos intentos seguimos a la vacante (nunca sin salida, RF1).
+const INTENTOS_REGLA = 2;
 
 function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: string) => void }) {
   const [fase, setFase] = useState<Fase>("creando");
+  const [errorRegla, setErrorRegla] = useState("");
+  const intentosRegla = useRef(0);
   const cuenta = useRef<CuentaCreada | null>(null);
   const regla = useRef<Awaited<ReturnType<typeof import("./stellar-cliente").prepararRegla>> | null>(null);
   const terminado = useRef(false);
@@ -505,11 +510,18 @@ function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: st
   const autorizar = async () => {
     if (!regla.current) return;
     setFase("firmando");
+    setErrorRegla("");
     try {
       const id = await (await import("./stellar-cliente")).firmarRegla(regla.current);
       guardar(id);
-      terminar("Listo, tu pasaporte ya está en Stellar ✦");
+      terminar("Listo, ya tienes tu Pasaporte Opportuni ✦");
     } catch (e) {
+      intentosRegla.current += 1;
+      if (intentosRegla.current < INTENTOS_REGLA) {
+        setErrorRegla("No se completó. Inténtalo otra vez.");
+        setFase("regla");
+        return;
+      }
       guardar(null);
       avisarCuenta({
         resultado: "fallo",
@@ -518,12 +530,6 @@ function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: st
       });
       terminar();
     }
-  };
-
-  const saltar = () => {
-    guardar(null);
-    avisarCuenta({ resultado: "fallo", motivo: "regla_cancelada", detalle: "saltó" });
-    terminar();
   };
 
   useEffect(() => {
@@ -549,33 +555,48 @@ function CuentaStellar({ nombre, onFin }: { nombre: string; onFin: (mensaje?: st
     );
   }
 
-  if (fase === "regla" || fase === "firmando") {
+  if (fase === "regla") {
     return (
       <div className="bento p-6 text-center" style={{ background: "white" }}>
         <div className="text-4xl mb-2">✦</div>
         <h2 className="text-xl font-black mb-2">Último paso</h2>
         <p className="text-sm text-gray-600 mb-5">
-          Deja que Opportuni anote en tu pasaporte las vacantes que abres. Es lo único que puede hacer: no puede
-          mover nada más de tu cuenta.
+          Autoriza a Opportuni para agregar credenciales a tu pasaporte. Es lo único que puede hacer: no puede mover
+          nada más de tu cuenta.
         </p>
-        <button
-          type="button"
-          onClick={autorizar}
-          disabled={fase === "firmando"}
-          className="btn-rosa w-full text-center disabled:opacity-60"
-        >
-          {fase === "firmando" ? "Guardando…" : "Autorizar con Face ID o huella"}
+        <button type="button" onClick={autorizar} className="btn-rosa w-full text-center">
+          Autorizar con Face ID o huella
         </button>
-        {fase === "regla" && <BotonSecundario onClick={saltar}>Ahora no</BotonSecundario>}
+        {errorRegla && <p className="text-xs text-red-600 mt-3">{errorRegla}</p>}
       </div>
     );
   }
 
+  if (fase === "firmando") {
+    return <Cargando titulo="Guardando tu Pasaporte Opportuni" texto="Un momento, ya casi." />;
+  }
+
   return (
-    <div className="bento p-8 text-center" style={{ background: "white" }}>
-      <div className="text-4xl mb-2">🔐</div>
-      <h2 className="text-xl font-black mb-1">Creando tu pasaporte…</h2>
-      <p className="text-sm text-gray-500">Usa tu Face ID o tu huella cuando te lo pida el teléfono.</p>
+    <Cargando
+      titulo="Tu Pasaporte Opportuni se está creando"
+      texto="Usa tu Face ID o tu huella cuando te lo pida el teléfono."
+    />
+  );
+}
+
+/** El logo de Opportuni girando mientras se crea o se guarda el pasaporte. */
+function Cargando({ titulo, texto }: { titulo: string; texto: string }) {
+  return (
+    <div className="bento p-8 text-center" style={{ background: "white" }} role="status" aria-live="polite">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo-opportuni.png"
+        alt=""
+        className="mx-auto mb-5 motion-safe:animate-spin"
+        style={{ width: 72, height: 72, animationDuration: "1.4s" }}
+      />
+      <h2 className="text-xl font-black mb-1">{titulo}…</h2>
+      <p className="text-sm text-gray-500">{texto}</p>
     </div>
   );
 }
