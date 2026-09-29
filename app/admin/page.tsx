@@ -1,26 +1,57 @@
-import Link from "next/link";
+"use client";
 
-// El dashboard estaba gateado por la wallet Accesly (NEXT_PUBLIC_ADMIN_WALLETS).
-// Al retirar esa infra no queda forma de autenticar al admin, así que la página
-// queda desactivada y las rutas /api/admin/* responden 503. El dashboard
-// completo (CVs, reuniones, vacantes y reporte PDF) sigue en el historial de
-// git — para reactivarlo hace falta definir antes un nuevo mecanismo de acceso.
-export const metadata = { title: "Dashboard no disponible · Opportuni" };
+import { useState } from "react";
+import { CvsTab, ReunionesTab, useEnvios } from "./_componentes/envios";
+import FormularioTab from "./_componentes/formulario";
+import JovenesTab from "./_componentes/jovenes";
+import { Shell, Tab } from "./_componentes/ui";
+import VacantesTab from "./_componentes/vacantes";
+
+// Dashboard de Opportuni. El middleware ya exige la sesión (ADMIN_PASSWORD +
+// cookie firmada con ADMIN_SESSION_SECRET) antes de servir esta página, y
+// cada /api/admin/* lo vuelve a revisar.
+
+type Pestana = "vacantes" | "formulario" | "jovenes" | "cvs" | "reuniones";
 
 export default function AdminPage() {
+  const [tab, setTab] = useState<Pestana>("vacantes");
+  const envios = useEnvios();
+
+  const salir = async () => {
+    await fetch("/api/admin/logout", { method: "POST" }).catch(() => null);
+    window.location.href = "/admin/login";
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--cream)" }}>
-      <div className="bento p-8 max-w-sm text-center">
-        <div className="text-4xl mb-3">🚧</div>
-        <h1 className="text-2xl font-black mb-2">Dashboard no disponible</h1>
-        <p className="text-sm text-gray-500 mb-6">
-          El dashboard está desactivado temporalmente mientras se define un nuevo
-          método de acceso. ✦
-        </p>
-        <Link href="/" className="btn-rosa w-full text-center block">
-          Volver al inicio
-        </Link>
+    <Shell wide>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-opportuni.png" alt="" style={{ height: 32 }} />
+          <h1 className="font-display text-xl font-black">Dashboard</h1>
+        </div>
+        <button onClick={salir} className="text-sm font-bold px-4 py-2 rounded-full" style={{ border: "2px solid var(--dark)", background: "white", cursor: "pointer" }}>
+          Salir
+        </button>
       </div>
-    </div>
+
+      <div className="flex flex-wrap gap-2 mb-5">
+        <Tab active={tab === "vacantes"} onClick={() => setTab("vacantes")}>Vacantes</Tab>
+        <Tab active={tab === "jovenes"} onClick={() => setTab("jovenes")}>Jóvenes</Tab>
+        <Tab active={tab === "formulario"} onClick={() => setTab("formulario")}>Formulario</Tab>
+        <Tab active={tab === "cvs"} onClick={() => setTab("cvs")}>
+          CVs {envios.data ? `(${envios.data.cvs.length})` : ""}
+        </Tab>
+        <Tab active={tab === "reuniones"} onClick={() => setTab("reuniones")}>
+          Reuniones {envios.data ? `(${envios.data.asesorias.length})` : ""}
+        </Tab>
+      </div>
+
+      {tab === "vacantes" && <VacantesTab />}
+      {tab === "jovenes" && <JovenesTab />}
+      {tab === "formulario" && <FormularioTab />}
+      {tab === "cvs" && <CvsTab {...envios} />}
+      {tab === "reuniones" && <ReunionesTab {...envios} />}
+    </Shell>
   );
 }

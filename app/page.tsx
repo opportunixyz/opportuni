@@ -188,7 +188,7 @@ export default function Home() {
                   CURSO <span className="opacity-70">McKinsey Forward — Gratis, 8 semanas 🎓</span>
                 </span>
                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold" style={{ background: "white", color: "var(--dark)" }}>
-                  BECA <span className="opacity-70">L'Oréal UNESCO — Mujeres en Ciencia ⚔️</span>
+                  BECA <span className="opacity-70">L&apos;Oréal UNESCO — Mujeres en Ciencia ⚔️</span>
                 </span>
                 <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold" style={{ background: "var(--lila)", color: "white" }}>
                   PROGRAMA <span className="opacity-70">Google Career Certificates 💻</span>

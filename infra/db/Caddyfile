@@ -1,0 +1,13 @@
+# /rest/v1/* es la misma ruta que usa Supabase, así app/lib/supabase.ts no cambia.
+db.opportuni.xyz {
+	encode zstd gzip
+	header -Server
+
+	handle_path /rest/v1/* {
+		reverse_proxy postgrest:3000
+	}
+
+	handle {
+		respond 404
+	}
+}
