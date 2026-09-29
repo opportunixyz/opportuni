@@ -123,7 +123,7 @@ Un historial laboral verificado en Stellar mainnet: cada vez que Opportuni hace 
 
 ## 8. Diseño técnico
 
-### 8.1 Qué se reusa del repo (`Accesly/opportuni`, base: `main`)
+### 8.1 Qué se reusa del repo (`opportunixyz/opportuni`, base: `main`)
 
 Desde el 26 sep `main` apunta al commit `8639887` (antes rama `sinlogin`, 30 ago), que ya retiró el SDK de Accesly, la wallet, los pagos on-chain y `@stellar/stellar-sdk`; dejó públicas home, /chat, /convocatorias y /cv/asesoria, y **apagó /admin**: la página muestra un aviso y `/api/admin/*` responde 503 detrás del flag `ADMIN_API_ENABLED` en `app/lib/submissions.ts`. La feature se construye encima de `main`.
 
@@ -247,7 +247,7 @@ No hay metas numéricas todavía: la primera semana es la línea base. No se com
 
 ## 12. Preguntas abiertas
 
-1. ~~¿Qué rama está desplegada?~~ Resuelto el 26 sep: `main` (= el antiguo `sinlogin`) es la rama de producción en el Vercel de Accesly.
+1. ~~¿Qué rama está desplegada?~~ Resuelto el 26 sep: `main` (= el antiguo `sinlogin`) es la rama de producción en el Vercel de la cuenta opportunixyz.
 2. ¿Número de WhatsApp oficial para el botón "Volver a WhatsApp"?
 3. ¿El pasaporte público muestra el nombre completo o nombre y primera letra del apellido? (v1 asume lo segundo.)
 4. ¿La credencial `cv_verificado` se emite también a los clientes de los meses anteriores? Si sí, Vianey necesita sus PDFs finales.

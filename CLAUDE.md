@@ -1,4 +1,4 @@
-# Opportuni (repo Accesly/opportuni)
+# Opportuni (repo opportunixyz/opportuni)
 
 Web de Opportuni en Next.js 14 (App Router), Supabase y Vercel. Comunidad de más de 12 mil jóvenes en México y Colombia.
 
@@ -15,15 +15,15 @@ Decisiones ya tomadas (no reabrir):
 - La postulación nunca depende de la passkey: si falla, el registro en `postulantes` ya quedó.
 - En cadena solo hash con salt. Nada de nombre, WhatsApp, empresa ni puesto.
 - `rpId` fijo `opportuni.xyz`; nunca probar passkeys desde `*.vercel.app`.
-- El contrato de registro vive en `Accesly/SmartContracts`, `contracts/credential-registry`.
+- El contrato de registro vive en este repo, en `contracts/credential-registry` (es del producto Opportuni, no de Accesly).
 
 Gates del fin de semana (26 y 27 sep): sábado 13:00 cuenta con passkey en mainnet desde iPhone, o plan B de cuentas patrocinadas; sábado 19:00 emisión con permiso delegado, o plan B de Face ID por credencial.
 
 ## Git
 
-- Commits como el usuario **Accesly** (identidad configurada solo en este repo).
+- Commits como el usuario **opportunixyz** (identidad configurada solo en este repo). El código de Opportuni no vive en la cuenta de Accesly: son empresas separadas.
 - Trabajar en `feature/pasaporte-stellar` (sale de `main`) y fusionar por PR. Nunca commits directos a `main`.
-- Deploy: Vercel de la cuenta Accesly, rama de producción `main`, dominio `opportuni.xyz`.
+- Deploy: Vercel de la cuenta opportunixyz (Hobby), rama de producción `main`, dominio `opportuni.xyz`.
 
 ## Copy
 
