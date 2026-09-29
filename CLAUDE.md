@@ -34,7 +34,7 @@ Decisiones ya tomadas (no reabrir):
 
 Plan por fases (PRD sección 10): 0 base propia, 1 links, formulario y puerta, 2 Stellar (arranca de cero: los gates del 26 y 27 sep no se corrieron; solo se comprobó que en iPhone el link de WhatsApp abre Safari y la passkey funciona), 3 operación y API, 4 conector de Claude para Vianey.
 
-Servidor: acceso de Claude Code con `ssh opportuni-db` (usuario `claude`, llave propia, permiso en `.claude/settings.local.json`). Antes de cambiar algo en el servidor, proponerlo y esperar el visto bueno de Roman.
+Base propia desplegada en el servidor (29 sep): ver [infra/db/README.md](infra/db/README.md) y migraciones en `db/migrations/`. Servidor: acceso de Claude Code con `ssh opportuni-db` (usuario `claude`, llave propia, permiso en `.claude/settings.local.json`). Antes de cambiar algo en el servidor, proponerlo y esperar el visto bueno de Roman.
 
 ## Git
 

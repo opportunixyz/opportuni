@@ -1,0 +1,56 @@
+# Base propia de Opportuni: Postgres + PostgREST detrás de Caddy (PRD 8.10).
+# Postgres y PostgREST no publican puertos: solo Caddy (80 y 443).
+name: opportuni-db
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: opportuni
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d opportuni"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [interna]
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@postgres:5432/opportuni
+      PGRST_DB_SCHEMAS: public
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_OPENAPI_MODE: disabled
+      PGRST_DB_MAX_ROWS: "1000"
+      # Sin PGRST_DB_ANON_ROLE: toda petición sin JWT se rechaza.
+    networks: [interna]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [postgrest]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [interna]
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  interna:
