@@ -107,6 +107,7 @@ export default async function VacantePuerta({ params }: { params: Params }) {
       terminos={TERMINOS_TEXTO}
       estadoSugerido={estadoDeIp(meta.pais_ip, meta.estado_ip)}
       ladaSugerida={meta.pais_ip === "CO" ? "+57" : "+52"}
+      inapp={meta.inapp}
     />
   );
 }

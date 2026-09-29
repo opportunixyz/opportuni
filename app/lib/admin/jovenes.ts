@@ -1,3 +1,4 @@
+import { stellarPublica } from "../stellar/config";
 import { svcRpc } from "../supabase";
 
 // Capa de servicio de jóvenes (solo equipo; PRD F3, ficha interna). Nada de
@@ -17,10 +18,18 @@ export interface JovenFila {
   dispositivos: number;
   sin_confirmar: number;
   ultimo_click: string | null;
+  /** Cuenta y CV verificado en la red de este ambiente (null si no hay). */
+  cuenta_modo: "passkey" | "respaldo" | null;
+  cuenta_estado: "creando" | "lista" | "sin_permiso" | "fallida" | null;
+  cv_estado: "pendiente" | "enviando" | "confirmada" | "fallida" | null;
 }
 
 export async function listarJovenes(q = "", limite = 200): Promise<JovenFila[]> {
-  const rows = await svcRpc<JovenFila[]>("jovenes_lista", { p_q: q.slice(0, 80), p_limit: limite });
+  const rows = await svcRpc<JovenFila[]>("jovenes_lista", {
+    p_q: q.slice(0, 80),
+    p_limit: limite,
+    p_red: stellarPublica()?.red ?? null,
+  });
   return rows.map((r) => ({
     ...r,
     clicks: Number(r.clicks),
