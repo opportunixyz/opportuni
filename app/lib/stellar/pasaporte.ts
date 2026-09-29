@@ -144,6 +144,21 @@ export async function asegurarRespaldo(slug: string, motivo: string, cfg: Stella
   await emitirPendientes(slug, cfg);
 }
 
+/**
+ * Todo pasaporte termina con su cuenta: si al que da click le falta (falló,
+ * quedó a medias o es de la fase 1), se le crea la de respaldo.
+ */
+export async function cuentaSiFalta(tokenHash: string) {
+  const cfg = stellarServidor();
+  if (!cfg) return;
+  try {
+    const slug = await svcRpc<string | null>("pasaporte_sin_cuenta", { p_token_hash: tokenHash, p_red: cfg.red });
+    if (slug) await asegurarRespaldo(slug, "click", cfg);
+  } catch (e) {
+    log("cuenta pendiente", e);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Cuenta con passkey (la crea el navegador con el kit)
 // ---------------------------------------------------------------------------

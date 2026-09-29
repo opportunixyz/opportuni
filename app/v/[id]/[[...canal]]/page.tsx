@@ -14,10 +14,14 @@ import {
   registrarEvento,
 } from "../../../lib/pasaporte/puerta";
 import { TERMINOS_TEXTO } from "../../../lib/pasaporte/terminos";
+import { cuentaSiFalta } from "../../../lib/stellar/pasaporte";
 import Puerta from "../../_puerta/puerta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Si al pasaporte le falta su cuenta, se crea después del redirect
+// (waitUntil); puede tardar ~30 s.
+export const maxDuration = 60;
 
 // La puerta del Pasaporte Opportuni (PRD F1): /v/{slug} y /v/{slug}/{canal}.
 // - Crawlers (preview de WhatsApp y redes): Open Graph de la vacante, sin click.
@@ -74,7 +78,7 @@ export default async function VacantePuerta({ params }: { params: Params }) {
 
   const disp = leerDispositivo(cookies().get(DEVICE_COOKIE)?.value);
   if (disp) {
-    waitUntil(registrarClick(disp.tokenHash, vacante.id, canal, meta));
+    waitUntil(registrarClick(disp.tokenHash, vacante.id, canal, meta).then(() => cuentaSiFalta(disp.tokenHash)));
     redirect(destino);
   }
 

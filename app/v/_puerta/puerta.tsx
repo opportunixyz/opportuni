@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Pregunta, Opciones } from "../../lib/pasaporte/formulario";
 import { stellarPublica } from "../../lib/stellar/config";
 import { CONSEJOS } from "./consejos";
-import { avisarCuenta, detalleDe, esCancelacion, firmarReto, puedePasskey } from "./passkey-cliente";
+import { avisarCuenta, detalleDe, esCancelacion, firmarReto, guardaPasskeys, puedePasskey } from "./passkey-cliente";
 import type { CuentaCreada } from "./stellar-cliente";
 
 // La pantalla de la puerta (PRD F1, paso 3): la vacante arriba, el formulario
@@ -37,6 +37,12 @@ export default function Puerta(props: Props) {
   const [vista, setVista] = useState<Vista>("form");
   const [mensajeListo, setMensajeListo] = useState("Listo, ya tienes tu pasaporte ✦");
   const [cuentaPara, setCuentaPara] = useState<{ url: string; nombre: string } | null>(null);
+  // null mientras se averigua; si no se sabe a tiempo, se intenta la passkey.
+  const autenticador = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (puedePasskey(props.inapp)) guardaPasskeys().then((v) => (autenticador.current = v));
+  }, [props.inapp]);
 
   const irA = (url: string, mensaje?: string) => {
     if (mensaje) setMensajeListo(mensaje);
@@ -46,12 +52,15 @@ export default function Puerta(props: Props) {
 
   // Pasaporte creado: sigue la cuenta con passkey o, si no se puede aquí, la de respaldo.
   const creado = (url: string, nombre: string, registrado: boolean) => {
-    if (registrado && puedePasskey(props.inapp)) {
+    if (registrado && puedePasskey(props.inapp) && autenticador.current !== false) {
       setCuentaPara({ url, nombre });
       setVista("cuenta");
       return;
     }
-    if (registrado && stellarPublica()) avisarCuenta({ resultado: "fallo", motivo: props.inapp ? "inapp" : "sin_soporte" });
+    if (registrado && stellarPublica()) {
+      const motivo = props.inapp ? "inapp" : puedePasskey(false) ? "sin_autenticador" : "sin_soporte";
+      avisarCuenta({ resultado: "fallo", motivo });
+    }
     irA(url);
   };
 
