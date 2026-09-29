@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, fmtDate, Spinner, SubTable } from "./ui";
+import { api, fmtDate, Modal, Spinner, SubTable } from "./ui";
 
 // Pestaña Jóvenes: la lista interna de pasaportes (solo equipo, PRD F3).
 // Nunca se comparte con empresas.
@@ -26,6 +26,7 @@ export default function JovenesTab() {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Joven[] | null>(null);
   const [err, setErr] = useState("");
+  const [elegido, setElegido] = useState<Joven | null>(null);
 
   const cargar = useCallback(async (busqueda: string) => {
     setErr("");
@@ -74,7 +75,13 @@ export default function JovenesTab() {
               j.areas.length ? j.areas.join(", ") : "—",
               j.rango_edad ?? "—",
               <span key="v">
-                <b>{j.vacantes}</b>
+                {j.vacantes > 0 ? (
+                  <button onClick={() => setElegido(j)} className="font-bold" style={{ color: "var(--lila)", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
+                    {j.vacantes} ver
+                  </button>
+                ) : (
+                  <b>0</b>
+                )}
                 <span className="block text-[11px] text-gray-400">
                   {j.clicks} clicks{j.ultimo_click ? ` · ${fmtDate(j.ultimo_click)}` : ""}
                 </span>
@@ -93,6 +100,62 @@ export default function JovenesTab() {
           />
         </>
       )}
+      {elegido && <VacantesJovenModal j={elegido} onClose={() => setElegido(null)} />}
     </>
+  );
+}
+
+interface VacanteAbierta {
+  vacante_id: string;
+  titulo: string;
+  empresa: string | null;
+  clicks: number;
+  canales: string[];
+  primer_click: string;
+  ultimo_click: string;
+}
+
+// Las vacantes que abrió una persona (solo equipo).
+function VacantesJovenModal({ j, onClose }: { j: Joven; onClose: () => void }) {
+  const [rows, setRows] = useState<VacanteAbierta[] | null>(null);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    let cancelado = false;
+    api<{ vacantes: VacanteAbierta[] }>(`/api/admin/jovenes?slug=${encodeURIComponent(j.slug)}`)
+      .then((d) => !cancelado && setRows(d.vacantes))
+      .catch((e) => !cancelado && setErr(e instanceof Error ? e.message : "No se pudieron cargar."));
+    return () => {
+      cancelado = true;
+    };
+  }, [j.slug]);
+
+  return (
+    <Modal onClose={onClose} width={760}>
+      <h2 className="text-2xl font-black mb-1">{j.nombre}</h2>
+      <p className="text-xs text-gray-400 font-mono mb-4">
+        {j.whatsapp} · {j.vacantes} vacantes · {j.clicks} clicks
+      </p>
+      {err && <p className="text-sm text-red-600">{err}</p>}
+      {!rows && !err && <Spinner />}
+      {rows && (
+        <SubTable
+          rows={rows}
+          cols={["Vacante", "Empresa", "Clicks", "Grupo", "Primer click", "Último click"]}
+          render={(v) => [
+            <span key="t">
+              <b>{v.titulo}</b>
+              <span className="block text-[11px] text-gray-400 font-mono">{v.vacante_id}</span>
+            </span>,
+            v.empresa ?? "—",
+            String(v.clicks),
+            v.canales.length ? v.canales.join(", ") : "—",
+            <span key="p" className="text-xs">{fmtDate(v.primer_click)}</span>,
+            <span key="u" className="text-xs">{fmtDate(v.ultimo_click)}</span>,
+          ]}
+          empty="Todavía no abre ninguna vacante."
+        />
+      )}
+    </Modal>
   );
 }

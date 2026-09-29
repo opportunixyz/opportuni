@@ -1,33 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { A4, CONTENT_W, CREAM, DARK, GRAY, MARGIN, ROSA, TEAL, WHITE, clean, encabezado, pie, truncate } from "../../../lib/admin/pdf";
 import { sinSesion } from "../../../lib/admin/guard";
 import { getVacanteById, svcRpc } from "../../../lib/supabase";
 
 export const runtime = "nodejs";
-
-// Paleta Opportuni (globals.css)
-const DARK = rgb(26 / 255, 26 / 255, 46 / 255);
-const ROSA = rgb(227 / 255, 33 / 255, 109 / 255);
-const NAR = rgb(248 / 255, 155 / 255, 14 / 255);
-const TEAL = rgb(14 / 255, 196 / 255, 169 / 255);
-const CREAM = rgb(253 / 255, 246 / 255, 238 / 255);
-const GRAY = rgb(0.42, 0.42, 0.48);
-const WHITE = rgb(1, 1, 1);
-
-const A4: [number, number] = [595.28, 841.89];
-const MARGIN = 48;
-const CONTENT_W = A4[0] - MARGIN * 2;
-
-// WinAnsi no cubre emojis ni todo unicode; deja solo lo imprimible.
-const clean = (s: string) =>
-  s.replace(/[^\x20-\x7EáéíóúÁÉÍÓÚñÑüÜ¿¡°·$€%&@#()/:.,+'"–—-]/g, "").trim();
-
-const truncate = (s: string, font: PDFFont, size: number, maxW: number) => {
-  let t = clean(s);
-  if (font.widthOfTextAtSize(t, size) <= maxW) return t;
-  while (t.length > 1 && font.widthOfTextAtSize(t + "…", size) > maxW) t = t.slice(0, -1);
-  return t + "…";
-};
 
 interface Postulante {
   nombre: string;
@@ -64,31 +41,11 @@ export async function GET(req: NextRequest) {
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   const fecha = new Date().toLocaleDateString("es-MX", { dateStyle: "long" });
-  const footer = (page: PDFPage) => {
-    const txt = clean(`Generado desde el dashboard de Opportuni · ${fecha}`);
-    page.drawText(txt, {
-      x: (A4[0] - helv.widthOfTextAtSize(txt, 8)) / 2,
-      y: 28,
-      size: 8,
-      font: helv,
-      color: GRAY,
-    });
-  };
+  const footer = (page: PDFPage) => pie(page, helv, `Reporte interno de Opportuni, no se comparte con empresas · ${fecha}`);
 
   let page = doc.addPage(A4);
 
-  // ---- Encabezado ----
-  page.drawRectangle({ x: 0, y: 752, width: A4[0], height: 90, color: DARK });
-  page.drawRectangle({ x: 0, y: 748, width: A4[0], height: 4, color: ROSA });
-  page.drawText("Opportuni", { x: MARGIN, y: 796, size: 24, font: bold, color: WHITE });
-  page.drawSvgPath("M 0 -5 L 1.6 -1.6 L 5 0 L 1.6 1.6 L 0 5 L -1.6 1.6 L -5 0 L -1.6 -1.6 Z", {
-    x: MARGIN + bold.widthOfTextAtSize("Opportuni", 24) + 12,
-    y: 805,
-    color: NAR,
-  });
-  page.drawText("REPORTE DE VACANTE", { x: MARGIN, y: 772, size: 10, font: bold, color: NAR });
-  const fw = helv.widthOfTextAtSize(clean(fecha), 9);
-  page.drawText(clean(fecha), { x: A4[0] - MARGIN - fw, y: 796, size: 9, font: helv, color: rgb(0.75, 0.75, 0.8) });
+  encabezado(page, bold, helv, "REPORTE INTERNO DE VACANTE", fecha);
 
   // ---- Vacante ----
   let y = 706;

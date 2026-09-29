@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CvsTab, ReunionesTab, useEnvios } from "./_componentes/envios";
 import FormularioTab from "./_componentes/formulario";
 import JovenesTab from "./_componentes/jovenes";
+import ReportesTab from "./_componentes/reportes";
 import { Shell, Tab } from "./_componentes/ui";
 import VacantesTab from "./_componentes/vacantes";
 
@@ -11,7 +12,7 @@ import VacantesTab from "./_componentes/vacantes";
 // cookie firmada con ADMIN_SESSION_SECRET) antes de servir esta página, y
 // cada /api/admin/* lo vuelve a revisar.
 
-type Pestana = "vacantes" | "formulario" | "jovenes" | "cvs" | "reuniones";
+type Pestana = "vacantes" | "reportes" | "formulario" | "jovenes" | "cvs" | "reuniones";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Pestana>("vacantes");
@@ -37,6 +38,7 @@ export default function AdminPage() {
 
       <div className="flex flex-wrap gap-2 mb-5">
         <Tab active={tab === "vacantes"} onClick={() => setTab("vacantes")}>Vacantes</Tab>
+        <Tab active={tab === "reportes"} onClick={() => setTab("reportes")}>Reportes</Tab>
         <Tab active={tab === "jovenes"} onClick={() => setTab("jovenes")}>Jóvenes</Tab>
         <Tab active={tab === "formulario"} onClick={() => setTab("formulario")}>Formulario</Tab>
         <Tab active={tab === "cvs"} onClick={() => setTab("cvs")}>
@@ -48,6 +50,7 @@ export default function AdminPage() {
       </div>
 
       {tab === "vacantes" && <VacantesTab />}
+      {tab === "reportes" && <ReportesTab />}
       {tab === "jovenes" && <JovenesTab />}
       {tab === "formulario" && <FormularioTab />}
       {tab === "cvs" && <CvsTab {...envios} />}

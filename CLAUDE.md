@@ -20,7 +20,7 @@ Decisiones ya tomadas (no reabrir):
 - El formulario es el de la vacante externa, no el nuestro. Un click se registra como `vacante` ("Vacante abierta vía Opportuni"), **nunca como postulación**: no sabemos si llenó el formulario.
 - El WhatsApp de quien da click no se puede leer del link: se pide una vez en la puerta. El link acepta un canal opcional (`/v/{slug}/{canal}`) desde la fase 1, pero los links por grupo (10 grupos de Opportuni MX) van en la fase 4.
 - `cv_verificado` es manual: Vianey lo emite a quien pagó, desde /admin o la API.
-- `/admin` sigue apagado en `main` (flag `ADMIN_API_ENABLED`, rutas en 503) hasta tener contraseña en env (`ADMIN_PASSWORD`) y cookie firmada. Los componentes del admin viejo están en el commit `c13f935`.
+- `/admin` está en producción desde el 29 sep, con `ADMIN_PASSWORD` y cookie firmada (`ADMIN_SESSION_SECRET`); `ADMIN_API_ENABLED` ya no existe.
 - API de admin con llaves por rol (`admin` para Roman, `operacion` para Vianey), guardadas como hash, solo en `Authorization: Bearer`, todo en `admin_audit`. /admin, la API y el servidor MCP comparten una sola capa de servicio.
 - Vianey opera desde claude.ai web con un conector (el mismo servidor MCP con login OAuth), en v1.1; mientras tanto usa /admin. Roman usa el MCP desde Claude Code con su llave.
 - Login con Google solo en v1.1 y solo si los errores de passkey lo justifican (Google bloquea su login dentro de Instagram, Facebook y TikTok).
@@ -32,7 +32,7 @@ Decisiones ya tomadas (no reabrir):
 - **No se usan los contratos ni el SDK de Accesly** (`Accesly/SmartContracts`, `@accesly/*`). La smart account y el verificador de passkeys son los de OpenZeppelin que `smart-account-kit` ya tiene desplegados en mainnet (ver PRD 8.2).
 - **Base nueva en PostgreSQL con Docker en Hetzner**, que arranca vacía: de Supabase (proyecto `gbdlfmkenfldrjnzxqst`, de la cuenta de Accesly) no se migra nada. Esquema con migraciones SQL en `db/migrations/`. La app la usa por PostgREST detrás de Caddy (PRD 8.10). El puerto de Postgres nunca se publica a internet. Los respaldos nunca van a la cuenta de Accesly.
 
-Plan por fases (PRD sección 10): 0 base propia, 1 links, formulario y puerta, 2 Stellar (arranca de cero: los gates del 26 y 27 sep no se corrieron; solo se comprobó que en iPhone el link de WhatsApp abre Safari y la passkey funciona), 3 operación y API, 4 conector de Claude para Vianey.
+Plan por fases (PRD sección 10), fases 0 y 1 en producción desde el 29 sep (PR #1): 0 base propia, 1 links, formulario y puerta, 2 Stellar (arranca de cero: los gates del 26 y 27 sep no se corrieron; solo se comprobó que en iPhone el link de WhatsApp abre Safari y la passkey funciona), 3 operación y API, 4 conector de Claude para Vianey.
 
 Base propia desplegada en el servidor (29 sep): ver [infra/db/README.md](infra/db/README.md) y migraciones en `db/migrations/`. Servidor: acceso de Claude Code con `ssh opportuni-db` (usuario `claude`, llave propia, permiso en `.claude/settings.local.json`). Antes de cambiar algo en el servidor, proponerlo y esperar el visto bueno de Roman.
 

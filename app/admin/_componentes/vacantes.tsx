@@ -46,6 +46,7 @@ export default function VacantesTab() {
   const [err, setErr] = useState("");
   const [nueva, setNueva] = useState(false);
   const [detalle, setDetalle] = useState<VacStat | null>(null);
+  const [abiertos, setAbiertos] = useState<VacStat | null>(null);
 
   const cargar = useCallback(async () => {
     setErr("");
@@ -93,6 +94,11 @@ export default function VacantesTab() {
             <b key="p">{v.postulantes}</b>,
             <CopyButton key="l" text={`${SITIO}/v/${v.vacante_id}`} label="Copiar link" />,
             <span key="a" className="flex flex-col gap-1 items-start">
+              {v.personas > 0 && (
+                <button onClick={() => setAbiertos(v)} className="font-bold text-left" style={{ color: "var(--lila)", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
+                  Quién la abrió ({v.personas})
+                </button>
+              )}
               {v.postulantes > 0 && (
                 <button onClick={() => setDetalle(v)} className="font-bold text-left" style={{ color: "var(--rosa)", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
                   Ver postulantes
@@ -116,6 +122,7 @@ export default function VacantesTab() {
 
       {nueva && <NuevaVacanteModal onClose={() => setNueva(false)} onCreada={() => void cargar()} />}
       {detalle && <PostulantesModal v={detalle} onClose={() => setDetalle(null)} />}
+      {abiertos && <QuienAbrioModal v={abiertos} onClose={() => setAbiertos(null)} />}
     </>
   );
 }
@@ -280,6 +287,66 @@ function PostulantesModal({ v, onClose }: { v: VacStat; onClose: () => void }) {
           <p className="text-[11px] text-gray-400 mt-1">{fmtDate(p.created_at)}</p>
         </div>
       ))}
+    </Modal>
+  );
+}
+
+interface PersonaClick {
+  slug: string;
+  nombre: string;
+  whatsapp: string;
+  estado: string | null;
+  areas: string[];
+  rango_edad: string | null;
+  clicks: number;
+  canales: string[];
+  primer_click: string;
+  ultimo_click: string;
+}
+
+// Quién abrió la vacante: solo equipo, nunca se manda a empresas.
+function QuienAbrioModal({ v, onClose }: { v: VacStat; onClose: () => void }) {
+  const [rows, setRows] = useState<PersonaClick[] | null>(null);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    let cancelado = false;
+    api<{ personas: PersonaClick[] }>(`/api/admin/vacantes?abrieron=${encodeURIComponent(v.vacante_id)}`)
+      .then((d) => !cancelado && setRows(d.personas))
+      .catch((e) => !cancelado && setErr(e instanceof Error ? e.message : "No se pudieron cargar."));
+    return () => {
+      cancelado = true;
+    };
+  }, [v.vacante_id]);
+
+  return (
+    <Modal onClose={onClose} width={900}>
+      <h2 className="text-2xl font-black mb-1">Quién abrió: {v.titulo}</h2>
+      <p className="text-xs text-gray-400 font-mono mb-4">
+        {v.personas} personas · {v.clicks} clicks · solo equipo, no se comparte con empresas
+      </p>
+      {err && <p className="text-sm text-red-600">{err}</p>}
+      {!rows && !err && <Spinner />}
+      {rows && (
+        <SubTable
+          rows={rows}
+          cols={["Nombre", "WhatsApp", "Estado", "Áreas", "Edad", "Clicks", "Grupo", "Último click"]}
+          render={(p) => [
+            <b key="n">{p.nombre}</b>,
+            <span key="w" className="font-mono text-xs">{p.whatsapp}</span>,
+            p.estado ?? "—",
+            p.areas.length ? p.areas.join(", ") : "—",
+            p.rango_edad ?? "—",
+            String(p.clicks),
+            p.canales.length ? p.canales.join(", ") : "—",
+            <span key="u" className="text-xs">
+              {fmtDate(p.ultimo_click)}
+              {p.clicks > 1 && <span className="block text-[11px] text-gray-400">primero: {fmtDate(p.primer_click)}</span>}
+            </span>,
+          ]}
+          empty="Nadie con pasaporte ha abierto esta vacante todavía."
+        />
+      )}
     </Modal>
   );
 }
