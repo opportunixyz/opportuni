@@ -6,7 +6,7 @@ Web de Opportuni en Next.js 14 (App Router), PostgreSQL con Docker y Vercel. Com
 
 ## Feature en curso: Pasaporte Opportuni (sep 2026)
 
-**Fuente de verdad: [docs/prd-pasaporte-opportuni.md](docs/prd-pasaporte-opportuni.md).** Leerlo antes de tocar código. También en Notion: "PRD · Pasaporte Opportuni v1" (la copia de Notion es anterior a la revisión del 28 sep).
+**Fuente de verdad: [docs/prd-pasaporte-opportuni.md](docs/prd-pasaporte-opportuni.md).** Mapa de rutas, quién las usa y qué variables las prenden: [docs/rutas.md](docs/rutas.md). Leerlo antes de tocar código. También en Notion: "PRD · Pasaporte Opportuni v1" (la copia de Notion es anterior a la revisión del 28 sep).
 
 Resumen: todo link de vacante pasa por `opportuni.xyz/v/{slug}`. La primera vez el joven llena el formulario del pasaporte (nombre, WhatsApp, estado, área de interés), acepta términos y usa su passkey, y cae en la vacante; después cada click va directo y queda registrado en la base con su pasaporte, canal y metadata. El pasaporte es una smart account en Stellar mainnet (`smart-account-kit`) con un permiso limitado para Opportuni (context rule con signer delegado), y Opportuni emite credenciales (por ahora `cv_verificado`, manual) en un contrato de registro en Soroban. Fees con OpenZeppelin Channels y RPC gratuita. Base en servidor propio en Hetzner.
 
