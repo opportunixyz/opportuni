@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CvsTab, ReunionesTab, useEnvios } from "./_componentes/envios";
+import EquipoTab from "./_componentes/equipo";
 import FormularioTab from "./_componentes/formulario";
 import GruposTab from "./_componentes/grupos";
 import JovenesTab from "./_componentes/jovenes";
@@ -13,7 +14,7 @@ import VacantesTab from "./_componentes/vacantes";
 // cookie firmada con ADMIN_SESSION_SECRET) antes de servir esta página, y
 // cada /api/admin/* lo vuelve a revisar.
 
-type Pestana = "vacantes" | "grupos" | "reportes" | "formulario" | "jovenes" | "cvs" | "reuniones";
+type Pestana = "vacantes" | "grupos" | "reportes" | "formulario" | "jovenes" | "cvs" | "reuniones" | "equipo";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Pestana>("vacantes");
@@ -49,6 +50,7 @@ export default function AdminPage() {
         <Tab active={tab === "reuniones"} onClick={() => setTab("reuniones")}>
           Reuniones {envios.data ? `(${envios.data.asesorias.length})` : ""}
         </Tab>
+        <Tab active={tab === "equipo"} onClick={() => setTab("equipo")}>Equipo</Tab>
       </div>
 
       {tab === "vacantes" && <VacantesTab />}
@@ -58,6 +60,7 @@ export default function AdminPage() {
       {tab === "formulario" && <FormularioTab />}
       {tab === "cvs" && <CvsTab {...envios} />}
       {tab === "reuniones" && <ReunionesTab {...envios} />}
+      {tab === "equipo" && <EquipoTab />}
     </Shell>
   );
 }
