@@ -7,10 +7,13 @@ import { buscarVacante, canalValido, destinoDe, nuevoSlugPasaporte, registrarCli
 import { TERMINOS_VERSION } from "../../lib/pasaporte/terminos";
 import { dentroDelLimite, ipDe } from "../../lib/limite";
 import { verificarTurnstile } from "../../lib/pasaporte/turnstile";
-import { svcRpc } from "../../lib/supabase";
+import { svcRpc, svcUpdate } from "../../lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/** Pasaportes por hora que se pueden crear sin Turnstile (migración 0012). */
+const TOPE_SIN_VERIFICAR = 30;
 
 // POST: la puerta envía el formulario del pasaporte. Crea el pasaporte y su
 // dispositivo (confirmado), deja la cookie opp_dev, registra el click y
@@ -18,7 +21,14 @@ export const dynamic = "force-dynamic";
 // Si la base falla, responde con el destino igual para que el joven llegue a
 // la vacante (RF1 y RF11).
 export async function POST(req: NextRequest) {
-  let body: { vacante?: unknown; canal?: unknown; respuestas?: unknown; terminos?: unknown; turnstile?: unknown };
+  let body: {
+    vacante?: unknown;
+    canal?: unknown;
+    respuestas?: unknown;
+    terminos?: unknown;
+    turnstile?: unknown;
+    sinTurnstile?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
@@ -39,12 +49,23 @@ export async function POST(req: NextRequest) {
   }
   if (lookup.estado === "sin_base") return sigue();
 
-  // Frena a los scripts que crean pasaportes (y wallets) en masa.
+  // Frena a los scripts que crean pasaportes (y wallets) en masa. Si
+  // Cloudflare no cargó en su navegador (llega sin token), se deja pasar con
+  // un tope aparte y chico por hora y el pasaporte queda "sin verificar".
+  let sinVerificar = false;
   if (!(await verificarTurnstile(body.turnstile, ipDe(req.headers)))) {
-    return NextResponse.json(
-      { ok: false, error: "No pudimos comprobar que eres una persona. Intenta de nuevo.", clave: "turnstile" },
-      { status: 403 }
-    );
+    const sinToken = typeof body.turnstile !== "string" || !body.turnstile;
+    const hayCupo =
+      sinToken &&
+      body.sinTurnstile === true &&
+      (await svcRpc<boolean>("cupo_sin_verificar", { p_max: TOPE_SIN_VERIFICAR }).catch(() => false));
+    if (!hayCupo) {
+      return NextResponse.json(
+        { ok: false, error: "No pudimos comprobar que eres una persona. Intenta de nuevo.", clave: "turnstile" },
+        { status: 403 }
+      );
+    }
+    sinVerificar = true;
   }
 
   const respuestas = (body.respuestas && typeof body.respuestas === "object" ? body.respuestas : {}) as Respuestas;
@@ -90,6 +111,11 @@ export async function POST(req: NextRequest) {
     if (!res) throw new Error("No se pudo generar un slug libre.");
     if (!res.creado) {
       return NextResponse.json({ ok: false, existe: true, error: "Ese WhatsApp ya tiene pasaporte." }, { status: 409 });
+    }
+    if (sinVerificar && res.slug) {
+      await svcUpdate("pasaportes", `slug=eq.${res.slug}`, { verificado: false }).catch((e) =>
+        console.error("[pasaporte] no se marcó sin verificar:", e instanceof Error ? e.message : e)
+      );
     }
 
     if (vacante) waitUntil(registrarClick(disp.tokenHash, vacante.id, canal, meta));

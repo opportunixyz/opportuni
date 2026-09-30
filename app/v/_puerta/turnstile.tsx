@@ -79,15 +79,26 @@ export default function Turnstile({
   return <div ref={caja} className="mt-4" />;
 }
 
+/** Segundos que se espera a Cloudflare antes de dejar seguir sin su token. */
+const ESPERA_MS = 8_000;
+
 /**
- * Estado de Turnstile para un formulario: el token, si todavía se espera y si
- * falló. No hay atajo a la vacante sin pasaporte: mientras se verifica, el
- * botón dice "Verificando…"; si el widget falla, se ofrece reintentar.
+ * Estado de Turnstile para un formulario. Mientras Cloudflare verifica, el
+ * botón dice "Verificando…". Si falla o tarda más de 8 s, el botón se activa
+ * igual y el pasaporte se crea "sin verificar" (el servidor lo deja con un
+ * tope aparte y chico por hora). Nunca hay atajo a la vacante sin pasaporte.
  */
 export function useTurnstile() {
   const [token, setToken] = useState<string | null>(null);
   const [falla, setFalla] = useState(false);
+  const [lento, setLento] = useState(false);
   const [reinicio, setReinicio] = useState(0);
+
+  useEffect(() => {
+    if (!SITE_KEY) return;
+    const t = setTimeout(() => setLento(true), ESPERA_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   // Cada token sirve una vez: tras cualquier error, un widget nuevo (y, si
   // el script no había cargado, se vuelve a intentar).
@@ -99,8 +110,9 @@ export function useTurnstile() {
 
   return {
     token,
-    esperando: !!SITE_KEY && !token && !falla,
-    falla: !!SITE_KEY && !token && falla,
+    esperando: !!SITE_KEY && !token && !falla && !lento,
+    /** Seguir sin token: Cloudflare no cargó o tardó demasiado. */
+    sinToken: !!SITE_KEY && !token && (falla || lento),
     renovar,
     widget: <Turnstile key={reinicio} onToken={setToken} onFalla={() => setFalla(true)} />,
   };
