@@ -188,7 +188,7 @@ function Formulario({
       const r = await fetch("/api/pasaporte", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacante: vacante.id, canal, respuestas: valores, terminos: true, turnstile: ts.token }),
+        body: JSON.stringify({ vacante: vacante.id, canal, respuestas: valores, terminos: true, turnstile: ts.token, sinTurnstile: ts.sinToken }),
       });
       const d = await r.json().catch(() => ({}));
       if (d.ok && d.destino) {
@@ -285,12 +285,6 @@ function Formulario({
       >
         {enviando ? "Creando tu pasaporte…" : ts.esperando ? "Verificando…" : "Crear mi pasaporte y ver la vacante"}
       </button>
-      {ts.falla && (
-        <>
-          <p className="text-xs text-gray-500 text-center mt-3">No pudimos verificar tu conexión.</p>
-          <BotonSecundario onClick={ts.renovar}>Reintentar</BotonSecundario>
-        </>
-      )}
 
       <button
         type="button"
@@ -742,7 +736,7 @@ function YaTengo({
       const r = await fetch("/api/pasaporte/entrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vacante: vacanteId, canal, lada, numero, turnstile: ts.token }),
+        body: JSON.stringify({ vacante: vacanteId, canal, lada, numero, turnstile: ts.token, sinTurnstile: ts.sinToken }),
       });
       const d = await r.json().catch(() => ({}));
       if (d.ok && d.destino) return onListo(d.destino);
@@ -822,12 +816,6 @@ function YaTengo({
       >
         {enviando ? "Buscando tu pasaporte…" : ts.esperando ? "Verificando…" : "Entrar y ver la vacante"}
       </button>
-      {ts.falla && (
-        <>
-          <p className="text-xs text-gray-500 text-center mt-3">No pudimos verificar tu conexión.</p>
-          <BotonSecundario onClick={ts.renovar}>Reintentar</BotonSecundario>
-        </>
-      )}
       <button
         type="button"
         onClick={onVolver}

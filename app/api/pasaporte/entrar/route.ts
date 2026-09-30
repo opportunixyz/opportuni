@@ -17,7 +17,14 @@ export const dynamic = "force-dynamic";
 // en Stellar ni abre el detalle privado. La confirmación con passkey llega en
 // la fase 2.
 export async function POST(req: NextRequest) {
-  let body: { vacante?: unknown; canal?: unknown; lada?: unknown; numero?: unknown; turnstile?: unknown };
+  let body: {
+    vacante?: unknown;
+    canal?: unknown;
+    lada?: unknown;
+    numero?: unknown;
+    turnstile?: unknown;
+    sinTurnstile?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
@@ -38,11 +45,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Revisa tu número: son 10 dígitos, sin la lada." }, { status: 400 });
   }
   if (lookup.estado === "sin_base") return NextResponse.json({ ok: true, destino, registrado: false });
+  // Sin token porque Cloudflare no cargó: se deja pasar, con un límite más
+  // estricto por IP (esto no crea wallets; solo liga el dispositivo sin
+  // confirmar).
   if (!(await verificarTurnstile(body.turnstile, ipDe(req.headers)))) {
-    return NextResponse.json(
-      { ok: false, error: "No pudimos comprobar que eres una persona. Intenta de nuevo." },
-      { status: 403 }
-    );
+    const sinToken = typeof body.turnstile !== "string" || !body.turnstile;
+    if (!(sinToken && body.sinTurnstile === true && dentroDelLimite(`entrar-sin:${ipDe(req.headers)}`, 3, 10 * 60_000))) {
+      return NextResponse.json(
+        { ok: false, error: "No pudimos comprobar que eres una persona. Intenta de nuevo." },
+        { status: 403 }
+      );
+    }
   }
 
   try {
