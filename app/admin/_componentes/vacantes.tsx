@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LinksPorGrupo, LinksPorGrupoModal } from "./grupos";
 import { api, CopyButton, Label, Modal, Spinner, SubTable, fmtDate } from "./ui";
 
 // Pestaña Vacantes (PRD F1, paso 0): pegar la URL de la vacante y obtener
@@ -47,6 +48,7 @@ export default function VacantesTab() {
   const [nueva, setNueva] = useState(false);
   const [detalle, setDetalle] = useState<VacStat | null>(null);
   const [abiertos, setAbiertos] = useState<VacStat | null>(null);
+  const [links, setLinks] = useState<VacStat | null>(null);
 
   const cargar = useCallback(async () => {
     setErr("");
@@ -92,7 +94,12 @@ export default function VacantesTab() {
             <b key="c">{v.clicks}</b>,
             <b key="u">{v.personas}</b>,
             <b key="p">{v.postulantes}</b>,
-            <CopyButton key="l" text={`${SITIO}/v/${v.vacante_id}`} label="Copiar link" />,
+            <span key="l" className="flex flex-col gap-1 items-start">
+              <button onClick={() => setLinks(v)} className="font-bold text-left" style={{ color: "var(--rosa)", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
+                Links por grupo
+              </button>
+              <CopyButton text={`${SITIO}/v/${v.vacante_id}`} label="Link general" />
+            </span>,
             <span key="a" className="flex flex-col gap-1 items-start">
               {v.personas > 0 && (
                 <button onClick={() => setAbiertos(v)} className="font-bold text-left" style={{ color: "var(--lila)", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
@@ -123,6 +130,7 @@ export default function VacantesTab() {
       {nueva && <NuevaVacanteModal onClose={() => setNueva(false)} onCreada={() => void cargar()} />}
       {detalle && <PostulantesModal v={detalle} onClose={() => setDetalle(null)} />}
       {abiertos && <QuienAbrioModal v={abiertos} onClose={() => setAbiertos(null)} />}
+      {links && <LinksPorGrupoModal vacante={links.vacante_id} titulo={links.titulo} onClose={() => setLinks(null)} />}
     </>
   );
 }
@@ -166,19 +174,19 @@ function NuevaVacanteModal({ onClose, onCreada }: { onClose: () => void; onCread
   return (
     <Modal onClose={onClose} width={480}>
       {creada ? (
-        <div className="text-center py-2">
-          <div className="text-5xl mb-2">🎉</div>
-          <h3 className="text-2xl font-black mb-2">¡Link listo!</h3>
-          <p className="text-sm text-gray-500 mb-4">Compártelo en la comunidad. Ya está activo:</p>
-          <div className="rounded-xl px-4 py-3 mb-4" style={{ background: "var(--cream2)", border: "2px solid var(--dark)" }}>
-            <p className="text-base font-mono font-bold break-all mb-2" style={{ color: "var(--rosa)" }}>
+        <div className="py-2">
+          <div className="text-center">
+            <div className="text-5xl mb-2">🎉</div>
+            <h3 className="text-2xl font-black mb-4">¡Links listos!</h3>
+          </div>
+          <LinksPorGrupo vacante={creada.id} />
+          <div className="rounded-xl px-4 py-3 mt-4 mb-4" style={{ background: "white", border: "2px dashed var(--dark)" }}>
+            <p className="text-xs text-gray-500 mb-1">Link general (sin grupo), para redes o donde no aplique un grupo:</p>
+            <p className="text-sm font-mono font-bold break-all mb-2" style={{ color: "var(--rosa)" }}>
               {creada.link}
             </p>
-            <CopyButton text={creada.link} label="Copiar link" />
+            <CopyButton text={creada.link} label="Copiar link general" />
           </div>
-          <p className="text-xs text-gray-400 mb-4">
-            Para un grupo en particular puedes agregar el canal al final: {creada.link}/cdmx
-          </p>
           <button onClick={onClose} className="btn-rosa w-full text-center">
             Listo
           </button>
