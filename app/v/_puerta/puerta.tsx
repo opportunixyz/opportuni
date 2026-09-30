@@ -285,7 +285,12 @@ function Formulario({
       >
         {enviando ? "Creando tu pasaporte…" : ts.esperando ? "Verificando…" : "Crear mi pasaporte y ver la vacante"}
       </button>
-      {ts.atorado && <BotonSecundario onClick={onFalla}>Ir a la vacante sin pasaporte</BotonSecundario>}
+      {ts.falla && (
+        <>
+          <p className="text-xs text-gray-500 text-center mt-3">No pudimos verificar tu conexión.</p>
+          <BotonSecundario onClick={ts.renovar}>Reintentar</BotonSecundario>
+        </>
+      )}
 
       <button
         type="button"
@@ -817,7 +822,12 @@ function YaTengo({
       >
         {enviando ? "Buscando tu pasaporte…" : ts.esperando ? "Verificando…" : "Entrar y ver la vacante"}
       </button>
-      {ts.atorado && <BotonSecundario onClick={onFalla}>Ir a la vacante sin pasaporte</BotonSecundario>}
+      {ts.falla && (
+        <>
+          <p className="text-xs text-gray-500 text-center mt-3">No pudimos verificar tu conexión.</p>
+          <BotonSecundario onClick={ts.renovar}>Reintentar</BotonSecundario>
+        </>
+      )}
       <button
         type="button"
         onClick={onVolver}

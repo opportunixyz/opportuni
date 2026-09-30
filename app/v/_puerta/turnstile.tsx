@@ -9,7 +9,6 @@ export const SITE_KEY = (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim(
 
 type Api = {
   render: (el: HTMLElement, opts: Record<string, unknown>) => string;
-  reset: (id: string) => void;
   remove: (id: string) => void;
 };
 
@@ -36,17 +35,14 @@ function cargarApi(): Promise<Api> {
 
 /**
  * `onToken` recibe el token (o null si venció). `onFalla` avisa si el widget
- * no pudo cargar o dar token, para ofrecer la vacante sin pasaporte.
- * `reinicio` cambia para pedir un token nuevo (cada token sirve una vez).
+ * no pudo cargar o dar token. Para un token nuevo se vuelve a montar (key).
  */
 export default function Turnstile({
   onToken,
   onFalla,
-  reinicio = 0,
 }: {
   onToken: (token: string | null) => void;
   onFalla: () => void;
-  reinicio?: number;
 }) {
   const caja = useRef<HTMLDivElement>(null);
   const id = useRef<string | null>(null);
@@ -79,41 +75,33 @@ export default function Turnstile({
     };
   }, []);
 
-  useEffect(() => {
-    const w = window as unknown as { turnstile?: Api };
-    if (reinicio && id.current && w.turnstile) {
-      avisos.current.onToken(null);
-      w.turnstile.reset(id.current);
-    }
-  }, [reinicio]);
-
   if (!SITE_KEY) return null;
   return <div ref={caja} className="mt-4" />;
 }
 
 /**
- * Estado de Turnstile para un formulario: el token, si todavía se espera, y
- * si se atoró (no cargó o tarda más de 10 s) para ofrecer la vacante sin
- * pasaporte.
+ * Estado de Turnstile para un formulario: el token, si todavía se espera y si
+ * falló. No hay atajo a la vacante sin pasaporte: mientras se verifica, el
+ * botón dice "Verificando…"; si el widget falla, se ofrece reintentar.
  */
 export function useTurnstile() {
   const [token, setToken] = useState<string | null>(null);
   const [falla, setFalla] = useState(false);
-  const [lento, setLento] = useState(false);
   const [reinicio, setReinicio] = useState(0);
 
-  useEffect(() => {
-    if (!SITE_KEY) return;
-    const t = setTimeout(() => setLento(true), 10_000);
-    return () => clearTimeout(t);
-  }, []);
+  // Cada token sirve una vez: tras cualquier error, un widget nuevo (y, si
+  // el script no había cargado, se vuelve a intentar).
+  const renovar = () => {
+    setToken(null);
+    setFalla(false);
+    setReinicio((n) => n + 1);
+  };
 
   return {
     token,
     esperando: !!SITE_KEY && !token && !falla,
-    atorado: !!SITE_KEY && !token && (falla || lento),
-    /** Cada token sirve una vez: tras cualquier respuesta de error, pedir otro. */
-    renovar: () => setReinicio((n) => n + 1),
-    widget: <Turnstile onToken={setToken} onFalla={() => setFalla(true)} reinicio={reinicio} />,
+    falla: !!SITE_KEY && !token && falla,
+    renovar,
+    widget: <Turnstile key={reinicio} onToken={setToken} onFalla={() => setFalla(true)} />,
   };
 }
