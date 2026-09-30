@@ -49,8 +49,27 @@ export interface CuentaCreada {
   publicKey: string;
 }
 
+// El kit arma el user.id de la passkey con `${nombre}:${fecha}:${Math.random()}`
+// y Safari exige que quepa en 64 bytes (Chrome no lo revisa). Fecha, aleatorio y
+// separadores llegan a 39 bytes: al nombre le quedan 24.
+const MAX_NOMBRE_BYTES = 24;
+
+export function nombreParaPasskey(nombre: string): string {
+  const cabe = (s: string) => new TextEncoder().encode(s).length <= MAX_NOMBRE_BYTES;
+  const limpio = nombre.trim().replace(/\s+/g, " ");
+  if (cabe(limpio)) return limpio || "Pasaporte";
+  let corto = "";
+  for (const c of limpio) {
+    if (!cabe(corto + c)) break;
+    corto += c;
+  }
+  // Mejor palabras completas: "Vianey Alejandra" y no "Vianey Alejandra Ma".
+  const espacio = corto.lastIndexOf(" ");
+  return (espacio > 0 ? corto.slice(0, espacio) : corto) || "Pasaporte";
+}
+
 export async function crearCuenta(nombre: string): Promise<CuentaCreada> {
-  const r = await obtenerKit().createWallet("Opportuni", nombre.trim().slice(0, 60) || "Pasaporte", {
+  const r = await obtenerKit().createWallet("Opportuni", nombreParaPasskey(nombre), {
     autoSubmit: true,
     authenticatorSelection: { residentKey: "required" },
   });
