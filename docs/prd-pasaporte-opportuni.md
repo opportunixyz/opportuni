@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Revisión del 28 y 29 sep 2026: el pasaporte pasa a ser la puerta de todas las vacantes. Construcción por fases (sección 10) |
+| **Estado** | Revisión del 28 al 30 sep 2026: el pasaporte es la puerta de todas las vacantes. Fases 0 a 2 en producción (sección 10) |
 | **Dueño y dev** | Roman (solo) |
 | **Operación** | Vianey (links de vacantes, pagos y CV verificado desde /admin o desde Claude) |
 | **One pager** | Notion › Opportuni › Tecnología › Propuesta con Blockchain › Pasaporte Opportuni × Stellar |
@@ -25,6 +25,31 @@
 4. **Espera continua:** del primer Face ID hasta la vacante, el logo de Opportuni gira con tips de Opportuni. La puerta no dice "Stellar".
 5. **Si Channels se acaba o se topa** (termina la alianza SDF y OpenZeppelin en dic 2026, y su tope diario no es público), Opportuni paga las comisiones desde la cuenta del emisor.
 
+### Qué cambió el 30 sep
+
+1. **Fase 2 probada en mainnet con personas reales:** Mel (Mac, Chrome, passkey), Giselle (Android: cerró la ventana de la llave y quedó con cuenta de respaldo) y Vianey (iPhone, Safari, passkey y permiso de Opportuni).
+2. **Safari exige que el `user.id` de la passkey quepa en 64 bytes.** `smart-account-kit` lo arma con el nombre, la fecha y un número aleatorio, así que con nombres largos fallaba y la puerta se iba al respaldo. Ahora a la passkey solo va el nombre hasta 24 bytes, en palabras completas (`nombreParaPasskey`, PR #13). En la base el nombre sigue completo.
+3. **Links por grupo en producción** (PR #10): 52 grupos de WhatsApp en 6 comunidades (Opportuni MX, MX 2.0 a 5.0 y COL). Los "pasaportes nuevos" de un grupo son las personas cuyo primer click llegó por ese grupo.
+4. **Conector de Claude en producción** (PR #11): servidor MCP en `/api/mcp` con OAuth propio. Los usuarios se crean en /admin › Equipo, y Vianey lo usa desde claude.ai.
+5. **Ambientes:** `beta.opportuni.xyz` es el de desarrollo (Preview de `feature/pasaporte-stellar`, con testnet) y `opportuni.xyz` el de producción (mainnet). No habrá túnel de Cloudflare.
+6. **Bounties de contratación en escrow** (propuesta, sin construir): una empresa (empezando con Pokta Labs) deposita un bounty en un escrow de Trustless Work para una cohorte, por ejemplo su top 3 de candidatos.
+   - La empresa aprueba cada hito: seleccionado, reto terminado y contratado.
+   - Opportuni cobra su comisión dentro del escrow (rol Platform Address). Trustless Work cobra 0.3%.
+   - El pago cae en la cuenta del pasaporte y se le avisa al joven por WhatsApp.
+   - La credencial confirma el resultado, así que credencial y pago quedan ligados.
+   - Falta probar que Trustless Work acepte como receptor una cuenta de contrato (`C…`), que es lo que son los pasaportes.
+7. **Nunca se paga por crear el pasaporte, por dar clicks ni por referir sin contratación.** El bounty lo paga la empresa, con su propio dinero, por un resultado. El SCF prohíbe las recompensas por acciones en la cadena y descarta esa actividad como inflada.
+8. **El cobro global sigue fuera de la cadena** (Stripe, y factura en México). A la cadena solo va el dinero del escrow.
+9. **SCF:** el perfil de la aplicación y la narrativa (capa de talento verificable, no almacenamiento de datos) viven en Notion › Propuesta con Blockchain › SCF Build Award · Perfil de la aplicación.
+10. **Siguiente feature, lo antes posible: dashboard público de Opportuni en [Dune](https://dune.com)**, con un link desde /traccion. Sirve para que cualquiera (SCF, empresas, aliados) vea la actividad de Opportuni en la cadena sin depender de nuestra base. Dune ya tiene tablas de Stellar, entre ellas `stellar.history_contract_events`, `stellar.history_transactions` y `stellar.contract_data`.
+    - **Qué muestra:** credenciales emitidas y revocadas por tipo y por semana (eventos del contrato de registro), cuentas de pasaporte creadas por semana (con Face ID o de respaldo), y transacciones y comisiones.
+    - **Por resolver, cómo atribuir las cuentas:**
+      - Las de respaldo son fáciles: las despliega nuestro emisor.
+      - Las de passkey no: las despliega el deployer de `smart-account-kit`, que comparten todas las apps que lo usan.
+      - Opción 1: identificarlas por la regla que tiene al emisor de Opportuni como signer delegado.
+      - Opción 2: que el registro emita un evento de alta por cada pasaporte (solo evento, unos 0.003 XLM).
+    - **Frescura:** las docs de Dune no dicen cada cuánto se actualizan los datos de Stellar, así que /traccion sigue siendo la cifra en tiempo real.
+
 ## 1. Qué es, en una frase
 
 Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: la primera vez el joven crea su Pasaporte (una sola vez, con Face ID o huella) y cae en la vacante; desde entonces sabemos qué vacantes abre cada quien, y lo que Opportuni hace por él (su CV verificado) queda como credencial en Stellar mainnet que cualquier empresa puede comprobar con un QR.
@@ -34,7 +59,7 @@ Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: l
 1. **SCF.** El Build Award se gana con transacciones reales en mainnet de usuarios reales. Los proyectos de credenciales que ya fondeó el SCF (Chaincerts $178K, Stellar Attestation Service $120K, EA Kazi, ICanProveIt) están muertos o sin usuarios: el SAS suma 52 usos en mainnet en ~10 meses. Nuestro foso es la distribución: más de 12 mil jóvenes y empresas que ya nos pagan.
 2. **Confianza.** Las postulaciones por vacante subieron 100% en dos años por la IA (Emerge, abr 2026). La empresa no sabe qué CV es real, y el joven que paga 300 MXN al mes no puede comprobar que sí trabajamos por él.
 3. **Saber quién es quién.** Hoy un link cuenta clicks anónimos. Con el pasaporte sabemos quién abre qué vacante, de qué estado es, qué le interesa y qué tan activo es en la comunidad. A la empresa le mostramos el panorama en porcentajes, sin datos de nadie en particular.
-4. **Base para cobrar después.** La misma cuenta del joven es donde luego caen bounties de referidos (fase 2) y pagos de empleadores de fuera (fase 3). Ver hoja de ruta en el one pager.
+4. **Base para cobrar después.** La misma cuenta del joven es donde después caen los bounties de contratación en escrow, que paga una empresa por un resultado (30 sep), y los pagos de empleadores de fuera. Nunca se paga por crear el pasaporte, por dar clicks ni por referir sin contratación.
 
 ## 3. Usuarios y lo que necesitan
 
@@ -64,14 +89,14 @@ Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: l
 
 ### Entra en v1.1
 
-- Conector de Claude con login (OAuth) para que Vianey opere desde claude.ai (8.9).
+- Conector de Claude con login (OAuth) para que Vianey opere desde claude.ai (8.9). En producción desde el 30 sep.
 - Reclamar la cuenta de respaldo: agregar passkey y borrar la llave en custodia (8.3).
 - Login con Google como segundo intento antes de la custodia, solo si los errores de passkey lo justifican (8.3).
-- Links por grupo (10 grupos y secciones de Opportuni MX), ver F1.
+- Links por grupo, ver F1. En producción desde el 30 sep, con 52 grupos en 6 comunidades.
 
 ### No entra
 
-- Pagos, bounties, USDC, off-ramp.
+- Pagos, USDC y off-ramp. Los bounties de contratación en escrow son la siguiente etapa (ver "Qué cambió el 30 sep").
 - API de WhatsApp (no la tenemos): ni login por WhatsApp ni leer el número de quien da click (ver F1).
 - Login de empresas (v2; en v1 Vianey les comparte el panel).
 - Mostrar a empresas datos de un joven en particular. Lo único individual que ve una empresa es el pasaporte público, y solo si el joven le da su QR.
@@ -88,7 +113,7 @@ Cada vacante que Opportuni comparte en WhatsApp pasa por un link de Opportuni: l
 
 **Paso 0, Vianey.** En /admin › Vacantes pega la URL de la vacante (su formulario, LinkedIn, lo que sea), con título y empresa, o se lo pide a Claude. Recibe `opportuni.xyz/v/pm-nubank`: slug legible sacado de puesto y empresa, editable. 
 
-**Links por grupo (después).** Opportuni MX tiene 10 grupos y secciones. Desde la fase 1 el link acepta un canal opcional (`opportuni.xyz/v/pm-nubank/cdmx`) y la base lo guarda, pero Vianey comparte un solo link como hoy. Generar las variantes por grupo va en la fase 4: implica pegar un link distinto en cada grupo en vez de reenviar el mismo mensaje. Mientras tanto, el estado que da cada joven en el formulario ya dice de dónde es la gente.
+**Links por grupo (en producción desde el 30 sep).** Cada vacante tiene un link por grupo de WhatsApp (`opportuni.xyz/v/pm-nubank/{grupo}`) para los 52 grupos de las 6 comunidades. Vianey los copia desde /admin › Vacantes › Links por grupo o se los pide a Claude. /admin › Grupos muestra cuántos clicks y pasaportes nuevos trae cada grupo.
 
 Para que el link no se note: dominio propio, slug en palabras, sin parámetros, y el preview de WhatsApp muestra el título y la empresa de la vacante con la marca de Opportuni (Open Graph de la puerta).
 
@@ -207,8 +232,8 @@ El formulario de F1 es lo que llena el perfil. Hay dos vistas, con reglas distin
 
 ### 7.1 Compatibilidad
 
-- **iPhone:** probado el 26 sep, un link desde WhatsApp abre en Safari, que sí soporta passkeys.
-- **Android:** pendiente. Probar con 2 o 3 teléfonos de la comunidad (webauthn.io desde WhatsApp) antes de mover todos los links a la puerta.
+- **iPhone:** probado el 26 sep, un link desde WhatsApp abre en Safari, que sí soporta passkeys. El 30 sep Vianey creó su cuenta con passkey en mainnet desde Safari. Safari exige que el `user.id` de la passkey quepa en 64 bytes (ver "Qué cambió el 30 sep").
+- **Android:** la passkey con huella funcionó el 29 sep en testnet. En mainnet, la primera persona con Android cerró la ventana de la llave y quedó con cuenta de respaldo. Falta una cuenta con passkey desde Android en mainnet.
 - `rpId` fijo: `opportuni.xyz`. Nunca servir el flujo desde `opportuni.vercel.app` ni previews, o las passkeys quedan amarradas al dominio equivocado.
 - La cookie vive por navegador: si el mismo teléfono abre links desde WhatsApp y desde Instagram, son dos navegadores. El segundo se reconoce con "Ya tengo pasaporte".
 
@@ -425,6 +450,7 @@ La base del pasaporte vive en un **servidor propio de Opportuni en Hetzner, con 
 | Pasaportes con 2 o más vacantes abiertas | Uso recurrente | `vacante_clicks` |
 | Errores de passkey por plataforma | Decidir el login con Google | `pasaporte_eventos` |
 | Verificaciones por QR | Si las empresas lo usan | `pasaporte_eventos` con `src=qr` |
+| Actividad en la cadena, pública | Que cualquiera la compruebe sin nuestra base (SCF, empresas) | Dashboard de Opportuni en Dune |
 
 No hay metas numéricas todavía: la primera semana es la línea base. No se comunica ninguna cifra afuera sin dato propio.
 
@@ -441,6 +467,12 @@ Por fases, en orden de riesgo. Cada fase sale sola a producción.
 | **4 · v1.1** | OAuth del conector para Vianey, reclamar respaldo con passkey, login con Google si los datos lo piden, links por grupo para los 10 grupos de Opportuni MX | Vianey crea un link desde claude.ai |
 
 Los pasaportes creados en la fase 1 reciben su cuenta en Stellar en su siguiente click (Face ID) o, si no la completan, una cuenta de respaldo.
+
+**Estado al 30 sep:**
+- **Fases 0, 1 y 2:** en producción. La 2 está en mainnet y probada en iPhone, Android y Mac.
+- **Fase 3:** faltan pagos, CV verificado con reclamo, QR del pasaporte y ficha del joven.
+- **Fase 4:** ya están el conector con OAuth y los links por grupo. Faltan reclamar el respaldo con passkey y el login con Google (condicional).
+- **Siguiente, lo antes posible:** el dashboard público en Dune (ver "Qué cambió el 30 sep").
 
 ## 11. Riesgos
 
@@ -471,7 +503,7 @@ Los pasaportes creados en la fase 1 reciben su cuenta en Stellar en su siguiente
 4. ¿La credencial `cv_verificado` se emite también a los clientes de los meses anteriores?
 5. ~~¿Qué pasó con los gates del 26 y 27 sep?~~ Resuelto el 29 sep: no se corrieron. Solo se comprobó que un link desde WhatsApp en iPhone abre en Safari y que ahí funcionan las passkeys. La fase 2 arranca de cero.
 6. Servidor en Hetzner: ¿qué contenedores tiene ya, cuánta RAM y disco? ¿Respaldo en R2 o en un Supabase de la cuenta de Opportuni?
-7. ~~¿Qué grupos distinguir en los links?~~ Resuelto el 29 sep: Opportuni MX tiene 10 grupos y secciones. Los links por grupo van en la fase 4; desde la fase 1 la base ya guarda el canal si viene.
+7. ~~¿Qué grupos distinguir en los links?~~ Resuelto el 29 sep: Opportuni MX tiene 10 grupos y secciones. Los links por grupo van en la fase 4; desde la fase 1 la base ya guarda el canal si viene. En producción desde el 30 sep, con 52 grupos en 6 comunidades.
 8. ¿Quién redacta y revisa los términos y el aviso de privacidad?
 9. ~~¿El panel de empresa se comparte en pantalla o en PDF?~~ Resuelto el 29 sep: en PDF.
 10. ¿Lista inicial de áreas: la de `/cv/revision` más Derecho, o Vianey tiene otra?
