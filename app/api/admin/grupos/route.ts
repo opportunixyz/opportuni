@@ -19,27 +19,38 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST { nombre, slug? }: grupo nuevo.
+// POST { nombre, slug?, comunidad? }: grupo nuevo.
 export async function POST(req: NextRequest) {
   const bloqueo = await sinSesion();
   if (bloqueo) return bloqueo;
   try {
-    const b = (await req.json().catch(() => ({}))) as { nombre?: unknown; slug?: unknown };
-    const grupo = await crearGrupo(String(b.nombre ?? ""), typeof b.slug === "string" ? b.slug : undefined);
+    const b = (await req.json().catch(() => ({}))) as { nombre?: unknown; slug?: unknown; comunidad?: unknown };
+    const grupo = await crearGrupo(
+      String(b.nombre ?? ""),
+      typeof b.slug === "string" ? b.slug : undefined,
+      typeof b.comunidad === "string" ? b.comunidad : undefined
+    );
     return NextResponse.json({ ok: true, grupo });
   } catch (e) {
     return respuestaError(e, "crear grupo");
   }
 }
 
-// PATCH { slug, nombre?, activo?, orden? }: el link (slug) no cambia.
+// PATCH { slug, nombre?, comunidad?, activo?, orden? }: el link (slug) no cambia.
 export async function PATCH(req: NextRequest) {
   const bloqueo = await sinSesion();
   if (bloqueo) return bloqueo;
   try {
-    const b = (await req.json().catch(() => ({}))) as { slug?: unknown; nombre?: unknown; activo?: unknown; orden?: unknown };
+    const b = (await req.json().catch(() => ({}))) as {
+      slug?: unknown;
+      nombre?: unknown;
+      comunidad?: unknown;
+      activo?: unknown;
+      orden?: unknown;
+    };
     const grupo = await actualizarGrupo(String(b.slug ?? ""), {
       nombre: typeof b.nombre === "string" ? b.nombre : undefined,
+      comunidad: typeof b.comunidad === "string" ? b.comunidad : undefined,
       activo: typeof b.activo === "boolean" ? b.activo : undefined,
       orden: typeof b.orden === "number" ? b.orden : undefined,
     });

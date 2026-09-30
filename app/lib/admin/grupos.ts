@@ -10,6 +10,7 @@ export const SLUG_GRUPO = /^[a-z0-9][a-z0-9-]{0,39}$/;
 export interface Grupo {
   slug: string;
   nombre: string;
+  comunidad: string | null;
   orden: number;
   activo: boolean;
 }
@@ -17,6 +18,7 @@ export interface Grupo {
 export interface GrupoStat {
   canal: string;
   nombre: string;
+  comunidad: string | null;
   en_lista: boolean;
   activo: boolean;
   orden: number;
@@ -30,7 +32,7 @@ export const linkDeGrupo = (vacante: string, grupo: string) => `${SITIO}/v/${vac
 
 export async function listarGrupos(soloActivos = false): Promise<Grupo[]> {
   return svcSelect<Grupo>(
-    `grupos?select=slug,nombre,orden,activo${soloActivos ? "&activo=is.true" : ""}&order=orden,nombre`
+    `grupos?select=slug,nombre,comunidad,orden,activo${soloActivos ? "&activo=is.true" : ""}&order=orden,nombre`
   );
 }
 
@@ -46,17 +48,19 @@ export async function statsGrupos(vacante?: string): Promise<GrupoStat[]> {
   }));
 }
 
-export async function crearGrupo(nombre: string, slug?: string): Promise<Grupo> {
+export async function crearGrupo(nombre: string, slug?: string, comunidad?: string): Promise<Grupo> {
   const n = nombre.trim().slice(0, 80);
   if (!n) throw new ErrorServicio("Falta el nombre del grupo.");
   const s = slug?.trim() ? slug.trim().toLowerCase() : slugify(n, 30);
   if (!SLUG_GRUPO.test(s)) throw new ErrorServicio("El link del grupo solo lleva minúsculas, números y guiones.");
-  // Al final de la lista.
-  const [ultimo] = await svcSelect<{ orden: number }>("grupos?select=orden&order=orden.desc&limit=1");
+  const com = comunidad?.trim().slice(0, 80) || null;
+  // Al final de su comunidad (o de la lista).
+  const filtro = com ? `&comunidad=eq.${encodeURIComponent(com)}` : "";
+  const [ultimo] = await svcSelect<{ orden: number }>(`grupos?select=orden${filtro}&order=orden.desc&limit=1`);
   try {
     const [g] = await svcInsert<Grupo>(
       "grupos",
-      { slug: s, nombre: n, orden: (ultimo?.orden ?? 0) + 10 },
+      { slug: s, nombre: n, comunidad: com, orden: (ultimo?.orden ?? 0) + 10 },
       { returning: true }
     );
     return g;
@@ -67,7 +71,10 @@ export async function crearGrupo(nombre: string, slug?: string): Promise<Grupo> 
 }
 
 /** El slug no se cambia: rompería los links que ya se compartieron. */
-export async function actualizarGrupo(slug: string, cambios: { nombre?: string; activo?: boolean; orden?: number }) {
+export async function actualizarGrupo(
+  slug: string,
+  cambios: { nombre?: string; comunidad?: string; activo?: boolean; orden?: number }
+) {
   if (!SLUG_GRUPO.test(slug)) throw new ErrorServicio("Grupo inválido.");
   const patch: Record<string, unknown> = {};
   if (typeof cambios.nombre === "string") {
@@ -75,6 +82,7 @@ export async function actualizarGrupo(slug: string, cambios: { nombre?: string; 
     if (!n) throw new ErrorServicio("Falta el nombre del grupo.");
     patch.nombre = n;
   }
+  if (typeof cambios.comunidad === "string") patch.comunidad = cambios.comunidad.trim().slice(0, 80) || null;
   if (typeof cambios.activo === "boolean") patch.activo = cambios.activo;
   if (Number.isInteger(cambios.orden)) patch.orden = cambios.orden;
   if (!Object.keys(patch).length) throw new ErrorServicio("Nada que cambiar.");

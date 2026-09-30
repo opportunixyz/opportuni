@@ -172,7 +172,7 @@ function NuevaVacanteModal({ onClose, onCreada }: { onClose: () => void; onCread
   };
 
   return (
-    <Modal onClose={onClose} width={480}>
+    <Modal onClose={onClose} width={creada ? 660 : 480}>
       {creada ? (
         <div className="py-2">
           <div className="text-center">
