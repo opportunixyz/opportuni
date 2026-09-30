@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "@react-three/drei": "^9.92.7",
     "@react-three/fiber": "^8.15.19",
     "@stellar/stellar-sdk": "16.3.0",
@@ -21,7 +22,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "smart-account-kit": "0.8.0",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20",
