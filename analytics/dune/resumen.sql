@@ -1,12 +1,12 @@
--- Pasaporte Opportuni: cifras principales.
-with c as (select * from query_{{cuentas}}),
-e as (select * from query_{{credenciales}})
+-- Opportuni Passport: key numbers.
+with a as (select * from query_{{cuentas}}),
+c as (select * from query_{{credenciales}})
 select
-  count(*) as cuentas,
-  count_if(modo = 'passkey') as con_passkey,
-  count_if(modo = 'respaldo') as de_respaldo,
-  round(cast(count_if(modo = 'passkey') as double) * 100 / nullif(count(*), 0), 1) as pct_passkey,
-  (select count_if(evento = 'issued') from e) as credenciales_emitidas,
-  (select count_if(evento = 'revoked') from e) as credenciales_revocadas,
-  (select count(distinct cuenta) from e where evento = 'issued') as cuentas_con_credencial
-from c
+  count(*) as accounts,
+  count_if(mode = 'passkey') as passkey_accounts,
+  count_if(mode = 'backup') as backup_accounts,
+  round(cast(count_if(mode = 'passkey') as double) * 100 / nullif(count(*), 0), 1) as passkey_pct,
+  (select count_if(event = 'issued') from c) as credentials_issued,
+  (select count_if(event = 'revoked') from c) as credentials_revoked,
+  (select count(distinct account) from c where event = 'issued') as accounts_with_credentials
+from a
