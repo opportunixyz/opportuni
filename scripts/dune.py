@@ -14,12 +14,12 @@ def req(method, path, body=None):
         with urllib.request.urlopen(r, timeout=60) as f: return json.load(f)
     except urllib.error.HTTPError as e: sys.exit(f"HTTP {e.code} en {path}: {e.read().decode()[:400]}")
 QUERIES = [  # (archivo, nombre en Dune)
-    ("cuentas", "Pasaporte Opportuni · cuentas en Stellar"),
-    ("credenciales", "Pasaporte Opportuni · credenciales"),
-    ("resumen", "Pasaporte Opportuni · resumen"),
-    ("cuentas_por_dia", "Pasaporte Opportuni · cuentas por día"),
-    ("credenciales_por_semana", "Pasaporte Opportuni · credenciales por semana"),
-    ("comisiones", "Pasaporte Opportuni · transacciones y comisiones"),
+    ("cuentas", "Opportuni Passport · Stellar accounts"),
+    ("credenciales", "Opportuni Passport · credentials"),
+    ("resumen", "Opportuni Passport · summary"),
+    ("cuentas_por_dia", "Opportuni Passport · accounts per day"),
+    ("credenciales_por_semana", "Opportuni Passport · credentials per week"),
+    ("comisiones", "Opportuni Passport · transactions and fees"),
 ]
 ruta_ids = os.path.join(D, "queries.json")
 ids = json.load(open(ruta_ids)) if os.path.exists(ruta_ids) else {}
