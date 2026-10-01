@@ -19,7 +19,7 @@ Queries públicas, en inglés, con la actividad del Pasaporte Opportuni en Stell
 - **Lo que sí distingue:** cada pasaporte recibe la regla "Opportuni" (`add_context_rule` sobre el contrato de registro `CCYQALCX…`) con el emisor de Opportuni `GCJOMP6D…` como signer delegado. `cuentas.sql` busca esa operación.
 - **Respaldo (`backup`) o passkey:** las cuentas de respaldo las despliega el emisor de Opportuni (`create_contract_v2` con `address` igual al emisor); las demás son con passkey.
 - **Cuentas sin la regla:** una cuenta con passkey cuyo permiso de Opportuni falló no aparece, porque no tiene la regla.
-- **Cuentas de prueba del equipo:** están en la lista `pruebas` de `cuentas.sql` y `credenciales.sql`, y no se cuentan. Si se borra otro pasaporte de prueba de la base, hay que agregar su cuenta a las dos listas para que Dune cuadre con /traccion.
+- **Cuentas de prueba del equipo:** están en la lista `test_accounts` de `cuentas.sql` y `credenciales.sql`, y no se cuentan. Si se borra otro pasaporte de prueba de la base, hay que agregar su cuenta a las dos listas para que Dune cuadre con /traccion.
 - **Retraso:** los datos de Stellar llegan a Dune con 1 a 2 horas de retraso (medido el 30 sep 2026). /traccion es la cifra en tiempo real.
 
 ## Cambiar una query
