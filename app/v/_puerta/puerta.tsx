@@ -5,6 +5,7 @@ import type { Pregunta, Opciones } from "../../lib/pasaporte/formulario";
 import { stellarPublica } from "../../lib/stellar/config";
 import { CONSEJOS } from "./consejos";
 import { avisarCuenta, detalleDe, esCancelacion, firmarReto, guardaPasskeys, puedePasskey } from "./passkey-cliente";
+import { placeholderNumero } from "../../lib/pasaporte/ladas";
 import type { CuentaCreada } from "./stellar-cliente";
 import { useTurnstile } from "./turnstile";
 
@@ -354,7 +355,7 @@ function Campo({
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
-            placeholder="10 dígitos"
+            placeholder={placeholderNumero(String(valores[`${p.clave}_lada`] ?? ladas[0]))}
             value={typeof valor === "string" ? valor : ""}
             onChange={(e) => set(p.clave, e.target.value)}
             maxLength={20}
@@ -794,7 +795,7 @@ function YaTengo({
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
-          placeholder="10 dígitos"
+          placeholder={placeholderNumero(lada)}
           value={numero}
           onChange={(e) => setNumero(e.target.value)}
           maxLength={20}
