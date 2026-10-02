@@ -5,6 +5,7 @@ import { cache } from "react";
 import { waitUntil } from "@vercel/functions";
 import { DEVICE_COOKIE, leerDispositivo } from "../../../lib/pasaporte/dispositivo";
 import { estadoDeIp, getPreguntas, type Pregunta } from "../../../lib/pasaporte/formulario";
+import { ladaDePais } from "../../../lib/pasaporte/ladas";
 import { esCrawler, metaDeHeaders } from "../../../lib/pasaporte/metadata";
 import {
   buscarVacante,
@@ -110,7 +111,7 @@ export default async function VacantePuerta({ params }: { params: Params }) {
       preguntas={preguntas}
       terminos={TERMINOS_TEXTO}
       estadoSugerido={estadoDeIp(meta.pais_ip, meta.estado_ip)}
-      ladaSugerida={meta.pais_ip === "CO" ? "+57" : "+52"}
+      ladaSugerida={ladaDePais(meta.pais_ip)}
       inapp={meta.inapp}
     />
   );

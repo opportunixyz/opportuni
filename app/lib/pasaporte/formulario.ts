@@ -1,4 +1,5 @@
 import { svcRpc, svcSelect } from "../supabase";
+import { digitosDeLada } from "./ladas";
 
 // Formulario del pasaporte (PRD F1). Vive en `formulario_preguntas` y se
 // edita desde /admin › Formulario. Las claves fijas son columnas de
@@ -52,20 +53,27 @@ export function grupoDe(opciones: Opciones, valor: string): string | null {
   return null;
 }
 
-const PAIS_DE_GRUPO: Record<string, string> = { méxico: "MX", mexico: "MX", colombia: "CO" };
+const PAIS_DE_GRUPO: Record<string, string> = {
+  méxico: "MX",
+  mexico: "MX",
+  colombia: "CO",
+  españa: "ES",
+  espana: "ES",
+};
 export const paisDeGrupo = (g: string | null) => (g ? PAIS_DE_GRUPO[g.trim().toLowerCase()] ?? null : null);
 
 // ---- WhatsApp ----
 
-/** Lada + número a E.164. México y Colombia piden 10 dígitos. */
+/** Lada + número a E.164. México y Colombia piden 10 dígitos; España, 9. */
 export function normalizarWhatsapp(lada: string, numero: string): string | null {
   const l = lada.replace(/\D/g, "");
   let n = numero.replace(/\D/g, "");
   if (!/^[1-9]\d{0,3}$/.test(l)) return null;
-  if (n.startsWith(l) && n.length > 10) n = n.slice(l.length);
+  const digitos = digitosDeLada(l);
+  if (n.startsWith(l) && n.length > (digitos ?? 10)) n = n.slice(l.length);
   if (l === "52" && n.length === 11 && n.startsWith("1")) n = n.slice(1); // el "1" viejo de celulares MX
-  if (l === "52" || l === "57") {
-    if (!/^\d{10}$/.test(n)) return null;
+  if (digitos) {
+    if (n.length !== digitos) return null;
   } else if (!/^\d{6,12}$/.test(n)) {
     return null;
   }
@@ -95,10 +103,19 @@ const DEPARTAMENTOS_CO: Record<string, string> = {
   VAC: "Valle del Cauca", VAU: "Vaupés", VID: "Vichada",
 };
 
+// España: comunidades autónomas (primer nivel de ISO 3166-2:ES).
+const COMUNIDADES_ES: Record<string, string> = {
+  AN: "Andalucía", AR: "Aragón", AS: "Asturias", IB: "Islas Baleares", CN: "Canarias",
+  CB: "Cantabria", CL: "Castilla y León", CM: "Castilla-La Mancha", CT: "Cataluña",
+  CE: "Ceuta", EX: "Extremadura", GA: "Galicia", RI: "La Rioja", MD: "Madrid",
+  ML: "Melilla", MC: "Murcia", NC: "Navarra", PV: "País Vasco", VC: "Comunidad Valenciana",
+};
+
 export function estadoDeIp(pais: string | null, region: string | null): string | null {
   if (!pais || !region) return null;
   if (pais === "MX") return ESTADOS_MX[region] ?? null;
   if (pais === "CO") return DEPARTAMENTOS_CO[region] ?? null;
+  if (pais === "ES") return COMUNIDADES_ES[region] ?? null;
   return null;
 }
 
@@ -155,7 +172,7 @@ export function validarRespuestas(
       const lada = txt(r[`${p.clave}_lada`], 6) || ladas[0] || "+52";
       if (ladas.length && !ladas.includes(lada)) return falta("Elige tu lada de la lista.");
       const e164 = normalizarWhatsapp(lada, numero);
-      if (!e164) return falta("Revisa tu número: son 10 dígitos, sin la lada.");
+      if (!e164) return falta(`Revisa tu número: son ${digitosDeLada(lada) ?? 10} dígitos, sin la lada.`);
       if (p.clave === "whatsapp") datos.whatsapp = e164;
       else datos.respuestas_extra[p.clave] = e164;
     } else if (p.tipo === "lista") {

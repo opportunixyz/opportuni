@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { DEVICE_COOKIE, deviceCookieOptions, nuevoDispositivo } from "../../../lib/pasaporte/dispositivo";
 import { normalizarWhatsapp } from "../../../lib/pasaporte/formulario";
+import { placeholderNumero } from "../../../lib/pasaporte/ladas";
 import { metaDeHeaders } from "../../../lib/pasaporte/metadata";
 import { buscarVacante, canalValido, destinoDe, registrarClick } from "../../../lib/pasaporte/puerta";
 import { dentroDelLimite, ipDe } from "../../../lib/limite";
@@ -40,9 +41,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Demasiados intentos. Espera unos minutos." }, { status: 429 });
   }
 
-  const whatsapp = normalizarWhatsapp(String(body.lada ?? "+52"), String(body.numero ?? ""));
+  const lada = String(body.lada ?? "+52");
+  const whatsapp = normalizarWhatsapp(lada, String(body.numero ?? ""));
   if (!whatsapp) {
-    return NextResponse.json({ ok: false, error: "Revisa tu número: son 10 dígitos, sin la lada." }, { status: 400 });
+    const error = `Revisa tu número: son ${placeholderNumero(lada)}, sin la lada.`;
+    return NextResponse.json({ ok: false, error }, { status: 400 });
   }
   if (lookup.estado === "sin_base") return NextResponse.json({ ok: true, destino, registrado: false });
   // Sin token porque Cloudflare no cargó: se deja pasar, con un límite más
