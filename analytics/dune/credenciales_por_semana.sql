@@ -1,9 +1,9 @@
--- Pasaporte Opportuni: credenciales por semana y tipo.
+-- Opportuni Passport: credentials per week and kind.
 select
-  date_trunc('week', closed_at) as semana,
-  tipo,
-  count_if(evento = 'issued') as emitidas,
-  count_if(evento = 'revoked') as revocadas
+  date_trunc('week', closed_at) as week,
+  kind,
+  count_if(event = 'issued') as issued,
+  count_if(event = 'revoked') as revoked
 from query_{{credenciales}}
 group by 1, 2
 order by 1

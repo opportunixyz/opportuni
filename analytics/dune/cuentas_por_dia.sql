@@ -1,10 +1,10 @@
--- Pasaporte Opportuni: cuentas nuevas por día y acumuladas.
+-- Opportuni Passport: new accounts per day and running total.
 select
-  dia,
-  count_if(modo = 'passkey') as con_passkey,
-  count_if(modo = 'respaldo') as de_respaldo,
-  count(*) as nuevas,
-  sum(count(*)) over (order by dia) as acumuladas
+  day,
+  count_if(mode = 'passkey') as passkey,
+  count_if(mode = 'backup') as backup,
+  count(*) as new_accounts,
+  sum(count(*)) over (order by day) as total_accounts
 from query_{{cuentas}}
-group by dia
-order by dia
+group by day
+order by day

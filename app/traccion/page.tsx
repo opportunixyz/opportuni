@@ -33,6 +33,8 @@ interface Traccion {
 }
 
 const DIA_MS = 86_400_000;
+/** Dashboard público en Dune (solo mainnet), armado con las queries de analytics/dune. */
+const DUNE_URL = "https://dune.com/opportunixyz/opportuni";
 const fmt = (n: number) => n.toLocaleString("es-MX");
 const corta = (c: string) => `${c.slice(0, 6)}…${c.slice(-4)}`;
 const fecha = (d: string) =>
@@ -145,6 +147,20 @@ export default async function TraccionPage() {
               <div className="bento p-6" style={{ background: "white" }}>
                 <h2 className="font-display text-lg font-black mb-3">Verifícalo en la cadena</h2>
                 <ul className="text-sm space-y-2">
+                  {explorer === "public" && (
+                    <li>
+                      <a
+                        href={DUNE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-bold"
+                        style={{ color: "var(--lila)" }}
+                      >
+                        Dashboard de Opportuni en Dune
+                      </a>{" "}
+                      <span className="text-gray-500">: cuentas y credenciales en gráficas, con unas horas de retraso.</span>
+                    </li>
+                  )}
                   <li>
                     <a
                       href={`https://stellar.expert/explorer/${explorer}/contract/${cfg.registro}`}
