@@ -5,12 +5,15 @@ with test_accounts (account) as (
   values 'CASIGOE3QJUVKFKKIG2MJKPTBZHZUHOZY7JEWCKT3W6LWBDX2HMHGTZJ',
          'CDFVBS7B65XV35KCSQUUZJZPXHSPC3UZNR7S6JZXVTESJIU3SXXM3E4J'
 ),
+-- Dune trae cada evento del contrato dos veces (mismo tx, mismos datos): se
+-- quitan los repetidos con select distinct.
 events as (
-select
+select distinct
   closed_at,
   date(closed_at) as day,
   json_extract_scalar(topics_decoded, '$[0].symbol') as event,
   json_extract_scalar(topics_decoded, '$[1].address') as account,
+  regexp_extract(data_decoded, '"id"\}\s*,\s*"val"\s*:\s*\{\s*"u64"\s*:\s*"(\d+)"', 1) as credential_id,
   coalesce(regexp_extract(data_decoded, '"kind"\}.*?"symbol"\s*:\s*"([^"]+)"', 1), 'n/a') as kind,
   concat('https://stellar.expert/explorer/public/tx/', lower(to_hex(transaction_hash))) as explorer
 from stellar.history_contract_events
