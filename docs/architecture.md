@@ -12,6 +12,7 @@ This document has two halves: **what runs on mainnet today (v1)** and **what the
 | **Contract source** | [`contracts/credential-registry`](../contracts/credential-registry) (Rust, soroban-sdk 28, Protocol 28) |
 | **On-chain dashboard** | [dune.com/opportunixyz/opportuni](https://dune.com/opportunixyz/opportuni) · queries in [`analytics/dune`](../analytics/dune) |
 | **Real-time numbers** | [opportuni.xyz/traccion](https://opportuni.xyz/traccion) |
+| **License** | MIT ([LICENSE](../LICENSE)): contract, SDK and app |
 | **Stack** | Next.js 14 on Vercel · PostgreSQL + PostgREST on our own server · `smart-account-kit` 0.8 (OpenZeppelin smart accounts) · `@stellar/stellar-sdk` 16.3 · OpenZeppelin Channels for fees · Cloudflare Turnstile |
 | **Product spec (Spanish)** | [prd-pasaporte-opportuni.md](prd-pasaporte-opportuni.md) · routes: [rutas.md](rutas.md) |
 
@@ -593,23 +594,34 @@ Sources: [Dune](https://dune.com/opportunixyz/opportuni), [stellar.expert](https
 
 Only new work. Everything in sections 1 and 5 is already live and is not part of the budget.
 
-| # | Deliverable | Tranche | How reviewers verify |
-|---|---|---|---|
-| 1.1 | Registry v2 on testnet: allow-list, kinds, `expires_at`, `extend_ttl`, `has()`, admin role, migration path from v1 | 1 (MVP) | Contract ID on testnet, test suite in CI, `has()` called from a sample contract |
-| 1.2 | Per-issuer consent in the gate: rule per issuer, relayer allow-list extended, revoke an issuer | 1 | Video on beta.opportuni.xyz; rules visible on the account |
-| 1.3 | Browser-side verification on `/p/{slug}` (hash recomputed in the browser, RPC read, no Opportuni API) | 1 | Network tab shows only RPC calls; test vectors in the repo |
-| 1.4 | Claim flow `/reclamar/{token}`: backup → passkey, custodial key deleted | 1 | Testnet tx: signer added, custodial signer removed |
-| 2.1 | Issuer API + webhooks; Pokta Labs issuing `interview` with its own key on testnet | 2 (testnet) | Transactions from two different issuers on the registry |
-| 2.2 | `@opportuni/passport` SDK (verify, has, list, issue) + docs + hackathon sandbox | 2 | npm package, example repo, one external integration |
-| 2.3 | STRIDE threat model + on-chain monitoring plan + monitoring service (alerts live on testnet) | 2 | Documents in the repo; alert fired in a drill |
-| 2.4 | Admin multisig 2-of-3 and key ceremony; upgrade rehearsal v1 → v2 on testnet | 2 | Multisig account on testnet; rehearsal log |
-| 2.5 | Security audit of registry v2 (Audit Bank) and fixes | 2 → 3 | Audit report and fix commits |
-| 3.1 | Mainnet upgrade to v2 (same contract ID), admin handed to the multisig | 3 (mainnet) | Upgrade tx; `issuers()` on mainnet shows Opportuni + Pokta |
-| 3.2 | Pokta Labs and one education partner issuing on mainnet; `hired` credential flow with the first companies | 3 | Credentials from ≥3 issuers on Dune |
-| 3.3 | Monitoring live on mainnet; Dune dashboard by issuer and kind; QR verifications measured | 3 | Public dashboard; alert history |
-| 3.4 | Optional: escrow-gated bounty pilot with Trustless Work | 3 | One real bounty released into a passport account |
+Team (3 engineers plus part-time security review):
 
-Team: one Soroban/contract engineer, one backend engineer (Issuer API, monitoring, custody), one frontend/SDK engineer, part-time security review. Estimates and budget per deliverable are in the application.
+| Role | Who | Owns |
+|---|---|---|
+| **Lead / Soroban engineer** | Roman (founder, built v1) | Registry v2, migration, multisig, relayer rules, architecture |
+| **Backend engineer** | hire, from tranche 1 | Issuer API, webhooks, custody and claim flow, monitoring service, Dune |
+| **Frontend / SDK engineer** | hire, from tranche 1 | Gate changes (per-issuer consent, claim), browser-side verification, `@opportuni/passport` SDK, docs and sandbox |
+| **Security reviewer** | part-time contractor | STRIDE threat model, monitoring plan review, audit coordination (Audit Bank) |
+
+The first tranche (10% on acceptance) funds the two hires' ramp-up; both start in tranche 1. Hours below are engineering estimates for the budget in the application, not commitments to the hour.
+
+| # | Deliverable | Tranche | Owner | Est. hours | How reviewers verify |
+|---|---|---|---|---|---|
+| 1.1 | Registry v2 on testnet: allow-list, kinds, `expires_at`, `extend_ttl`, `has()`, admin role, migration path from v1 | 1 (MVP) | Soroban | 120 | Contract ID on testnet, test suite in CI, `has()` called from a sample contract |
+| 1.2 | Per-issuer consent in the gate: rule per issuer, relayer allow-list extended, revoke an issuer | 1 | Frontend + Soroban | 80 | Video on beta.opportuni.xyz; rules visible on the account |
+| 1.3 | Browser-side verification on `/p/{slug}` (hash recomputed in the browser, RPC read, no Opportuni API) | 1 | Frontend | 60 | Network tab shows only RPC calls; test vectors in the repo |
+| 1.4 | Claim flow `/reclamar/{token}`: backup → passkey, custodial key deleted | 1 | Backend + Frontend | 100 | Testnet tx: signer added, custodial signer removed |
+| 2.1 | Issuer API + webhooks; Pokta Labs issuing `interview` with its own key on testnet | 2 (testnet) | Backend | 140 | Transactions from two different issuers on the registry |
+| 2.2 | `@opportuni/passport` SDK (verify, has, list, issue) + docs + hackathon sandbox | 2 | Frontend | 120 | npm package, example repo, one external integration |
+| 2.3 | STRIDE threat model + on-chain monitoring plan + monitoring service (alerts live on testnet) | 2 | Security + Backend | 100 | Documents in the repo; alert fired in a drill |
+| 2.4 | Admin multisig 2-of-3 and key ceremony; upgrade rehearsal v1 → v2 on testnet | 2 | Soroban | 40 | Multisig account on testnet; rehearsal log |
+| 2.5 | Security audit of registry v2 (Audit Bank) and fixes | 2 → 3 | Soroban + Security | 60 | Audit report and fix commits |
+| 3.1 | Mainnet upgrade to v2 (same contract ID), admin handed to the multisig | 3 (mainnet) | Soroban | 40 | Upgrade tx; `issuers()` on mainnet shows Opportuni + Pokta |
+| 3.2 | Pokta Labs and one education partner issuing on mainnet; `hired` credential flow with the first companies | 3 | Backend | 100 | Credentials from ≥3 issuers on Dune |
+| 3.3 | Monitoring live on mainnet; Dune dashboard by issuer and kind; QR verifications measured | 3 | Backend | 60 | Public dashboard; alert history |
+| 3.4 | Optional: escrow-gated bounty pilot with Trustless Work | 3 | Backend + Soroban | 80 | One real bounty released into a passport account |
+
+About 1,100 engineering hours over 5 months, plus project lead time. Budget per deliverable is in the application.
 
 ## 11. Why our own registry and not SAS or ACTA
 
